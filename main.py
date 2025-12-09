@@ -2,7 +2,7 @@ from workflows.graph import workflow
 import os
 
 if __name__ == "__main__":
-    # Create necessary directories
+    
     os.makedirs("screenshots", exist_ok=True)
     os.makedirs("logs", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
@@ -12,7 +12,7 @@ if __name__ == "__main__":
     print("Testing: NexusAI Platform")
     print("="*60)
     
-    # Test NexusAI with login credentials
+    
     result = workflow.invoke({
         "app_name": "nexusai",
         "start_url": "https://nexusai-ndus.onrender.com/login?next=%2F"
