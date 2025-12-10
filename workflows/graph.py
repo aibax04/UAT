@@ -68,27 +68,27 @@ def run_crawl(state: State) -> State:
             
             if state["login_success"]:
                 print(f"✓ Login successful!")
-                # Wait for redirect after login
+                
                 time.sleep(3)
             else:
                 print(f"⚠ Login may have failed, continuing anyway...")
         else:
-            # No login required, go directly to start URL
-            print(f"🌐 No login required, navigating to {state['start_url']}")
+            
+            print(f" No login required, navigating to {state['start_url']}")
             page.goto(state["start_url"], wait_until="networkidle", timeout=15000)
             time.sleep(2)
         
-        # Get the current URL after login (in case of redirect)
+        
         current_url = page.url
-        print(f"📍 Current page: {current_url}")
+        print(f" Current page: {current_url}")
         
         # Run the crawler from current page
         state["crawl_data"], state["transitions"] = crawl_app(
             page, 
             state["run_id"],
             start_url=current_url,
-            depth_limit=2,  # Crawl 2 levels deep
-            max_pages=25    # Visit up to 25 pages
+            depth_limit=2,  
+            max_pages=25    
         )
 
         # Save crawl data to database
@@ -167,7 +167,6 @@ def run_analysis(state: State) -> State:
     print(f"✓ UX Score: {score}/10")
     return state
 
-# Build the workflow graph
 graph = StateGraph(State)
 
 graph.add_node("start_run", start_run)

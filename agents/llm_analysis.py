@@ -140,6 +140,7 @@ Please provide a detailed UX/QA analysis report covering:
 5. Technical issues
 6. Recommendations
 7. UX score
+8. UI score
 """
 
     enabled_models = [m for m in FREE_MODELS if m["enabled"]]
