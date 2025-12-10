@@ -39,7 +39,7 @@ def start_run(state: State) -> State:
 
 def run_crawl(state: State) -> State:
     """Launch browser, login if needed, and crawl the application"""
-    print(f"🌐 Starting crawl of {state['start_url']}...")
+    print(f" Starting crawl of {state['start_url']}...")
     
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -52,18 +52,18 @@ def run_crawl(state: State) -> State:
         )
         page = context.new_page()
 
-        # Check if login is required
+        
         creds = get_credentials(state["app_name"])
         
         if creds and creds.get("login_url"):
-            print(f"🔐 Login required for {state['app_name']}")
+            print(f" Login required for {state['app_name']}")
             print(f"   Navigating to: {creds['login_url']}")
             
-            # Navigate to login page
+            
             page.goto(creds["login_url"], wait_until="networkidle", timeout=15000)
             time.sleep(2)
             
-            # Attempt login
+            
             state["login_success"] = login_to_app(page, state["app_name"])
             
             if state["login_success"]:
@@ -120,7 +120,7 @@ def run_crawl(state: State) -> State:
 
 def run_analysis(state: State) -> State:
     """Analyze crawl data using Gemini AI"""
-    print("🤖 Running AI analysis with Gemini 1.5 Pro...")
+    print("Running Ai analysis on crawled data...")
     
     # Add login context to analysis
     login_context = ""

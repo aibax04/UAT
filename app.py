@@ -10,7 +10,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# Store active runs
+
 active_runs = {}
 
 def run_test_async(run_id, app_name, start_url, username=None, password=None):
@@ -19,7 +19,7 @@ def run_test_async(run_id, app_name, start_url, username=None, password=None):
         active_runs[run_id]['status'] = 'running'
         active_runs[run_id]['progress'] = 'Initializing...'
         
-        # Add credentials to database if provided
+        
         if username and password:
             conn = get_db()
             cursor = conn.cursor()
@@ -30,8 +30,9 @@ def run_test_async(run_id, app_name, start_url, username=None, password=None):
             """, (app_name, start_url, username, password))
             conn.commit()
             conn.close()
+            
         
-        # Run the workflow
+        
         result = workflow.invoke({
             "app_name": app_name,
             "start_url": start_url
@@ -59,13 +60,13 @@ def start_test():
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     
-    # Generate app name from URL
+    
     app_name = url.split('//')[1].split('/')[0].replace('.', '_')
     
-    # Create run ID
+    
     run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
-    # Initialize run tracking
+    
     active_runs[run_id] = {
         'status': 'starting',
         'progress': 'Starting test...',
@@ -74,7 +75,7 @@ def start_test():
         'started_at': datetime.now().isoformat()
     }
     
-    # Start test in background thread
+    
     thread = threading.Thread(
         target=run_test_async,
         args=(run_id, app_name, url, username, password)
@@ -106,7 +107,7 @@ def get_test_report(run_id):
     if run_data['status'] != 'completed':
         return jsonify({'error': 'Test not completed yet'}), 400
     
-    # Get additional data from database
+    
     conn = get_db()
     cursor = conn.cursor()
     
@@ -117,7 +118,7 @@ def get_test_report(run_id):
     
     test_data = cursor.fetchone()
     
-    # Get screenshots
+    
     cursor.execute("""
         SELECT screenshot_path FROM crawl_logs 
         WHERE run_id = ?
@@ -137,7 +138,7 @@ def get_test_report(run_id):
         'total_clicks': test_data[1] if test_data else 0,
         'started_at': test_data[2] if test_data else None,
         'finished_at': test_data[3] if test_data else None,
-        'screenshots': screenshots[:10]  # Limit to first 10
+        'screenshots': screenshots[:10]  
     })
 
 @app.route('/api/screenshot/<path:filename>', methods=['GET'])

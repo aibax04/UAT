@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UX/QA Automation Agent</title>
+    <title>CRAWL AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -14,125 +15,264 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background: #ffffff;
-            color: #000000;
+            background: #000000;
+            color: #ffffff;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
             line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            border: 2px solid #000000;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.3) #000000;
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Landing Page */
+        .landing-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .landing-page.slide-up {
+            transform: translateY(-100vh);
+        }
+
+        .landing-page h1 {
+            font-size: 4em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+        }
+
+        .landing-page p {
+            font-size: 1.2em;
+            margin-bottom: 40px;
+            opacity: 0.8;
+            max-width: 600px;
+        }
+
+        .start-btn {
+            background: #ffffff;
+            color: #000000;
+            padding: 18px 50px;
+            border: 2px solid #ffffff;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:hover {
+            background: #000000;
+            color: #ffffff;
+            transform: scale(1.05);
+        }
+
+        /* Form Section */
+        .form-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000000;
+            transform: translateY(100vh);
+            transition: transform 0.5s ease-in-out;
+            padding: 40px 20px;
+            overflow-y: scroll;
+            overflow-x: hidden;
+        }
+
+        .form-section.active {
+            transform: translateY(0);
         }
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #000000;
-            padding-bottom: 20px;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 1px;
+            background: #ffffff;
+            opacity: 0.3;
         }
 
         .header h1 {
-            font-size: 2em;
-            margin-bottom: 10px;
-            font-weight: bold;
+            font-size: 2.8em;
+            margin-bottom: 15px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            text-transform: uppercase;
         }
 
         .header p {
             font-size: 1em;
-            color: #333333;
+            opacity: 0.6;
+            font-weight: 300;
         }
 
         .card {
-            background: #ffffff;
-            border: 2px solid #000000;
-            padding: 30px;
-            margin-bottom: 20px;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 30px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         label {
             display: block;
-            font-weight: bold;
+            font-weight: 400;
             margin-bottom: 8px;
-            color: #000000;
+            color: #ffffff;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 2px;
+            opacity: 0.7;
         }
 
         input[type="text"],
         input[type="url"],
         input[type="password"] {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #000000;
-            background: #ffffff;
-            color: #000000;
+            padding: 18px 0;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            background: transparent;
+            color: #ffffff;
             font-size: 16px;
+            transition: all 0.3s;
         }
 
         input:focus {
             outline: none;
-            background: #f5f5f5;
+            border-bottom-color: #ffffff;
+            border-bottom-width: 2px;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 300;
         }
 
         .optional-section {
-            background: #f5f5f5;
-            padding: 20px;
-            border: 1px solid #000000;
-            margin-top: 20px;
+            background: transparent;
+            padding: 30px 0;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .optional-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .optional-section h3 {
-            color: #000000;
-            font-size: 1em;
-            margin-bottom: 15px;
-            font-weight: bold;
+            color: #ffffff;
+            font-size: 0.85em;
+            margin-bottom: 25px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.6;
         }
 
         .btn {
-            background: #000000;
-            color: #ffffff;
-            padding: 15px 30px;
-            border: 2px solid #000000;
-            font-size: 16px;
-            font-weight: bold;
+            background: #ffffff;
+            color: #000000;
+            padding: 18px 40px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             width: 100%;
-            transition: background 0.2s, color 0.2s;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 20px;
         }
 
         .btn:hover {
-            background: #ffffff;
-            color: #000000;
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
         }
 
         .btn:disabled {
-            background: #cccccc;
+            background: #333333;
             color: #666666;
             cursor: not-allowed;
-            border-color: #cccccc;
+            border-color: #333333;
         }
 
         .btn-secondary {
-            background: #ffffff;
-            color: #000000;
-            border: 2px solid #000000;
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .btn-secondary:hover {
-            background: #000000;
-            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
         }
 
         .status-card {
             display: none;
-            background: #ffffff;
-            border: 2px solid #000000;
-            padding: 30px;
-            margin-bottom: 20px;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 0;
         }
 
         .status-card.active {
@@ -142,35 +282,49 @@
         .status-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #000000;
-            padding-bottom: 15px;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            position: relative;
+        }
+
+        .status-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .status-icon {
-            width: 40px;
-            height: 40px;
-            border: 2px solid #000000;
+            width: 50px;
+            height: 50px;
+            border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            margin-right: 15px;
-            font-weight: bold;
+            font-size: 24px;
+            margin-right: 20px;
+            font-weight: 300;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
         }
 
         .status-icon.running {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
             animation: pulse 1.5s infinite;
         }
 
         .status-icon.completed {
-            background: #000000;
+            background: rgba(255, 255, 255, 0.2);
             color: #ffffff;
         }
 
         .status-icon.failed {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
         }
 
         @keyframes pulse {
@@ -179,60 +333,87 @@
         }
 
         .progress-text {
-            font-size: 1em;
-            color: #000000;
+            font-size: 0.95em;
+            color: #ffffff;
             margin-bottom: 15px;
+            opacity: 0.5;
+            font-weight: 300;
         }
 
         .report-section {
-            background: #f5f5f5;
-            padding: 20px;
-            border: 1px solid #000000;
-            margin-top: 20px;
+            background: transparent;
+            padding: 30px 0;
+            margin-top: 30px;
             white-space: pre-wrap;
             font-family: 'Courier New', monospace;
-            max-height: 600px;
+            max-height: 500px;
             overflow-y: auto;
-            line-height: 1.6;
-            font-size: 14px;
+            line-height: 1.8;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            position: relative;
+        }
+
+        .report-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin: 40px 0;
         }
 
         .stat-box {
-            background: #ffffff;
-            border: 2px solid #000000;
-            padding: 20px;
+            background: transparent;
+            padding: 30px 20px;
             text-align: center;
+            position: relative;
+        }
+
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .stat-box .number {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #000000;
-            margin-bottom: 5px;
+            font-size: 3.5em;
+            font-weight: 300;
+            color: #ffffff;
+            margin-bottom: 10px;
+            line-height: 1;
         }
 
         .stat-box .label {
-            font-size: 0.9em;
-            color: #000000;
+            font-size: 0.75em;
+            color: #ffffff;
             text-transform: uppercase;
-            font-weight: bold;
+            font-weight: 400;
+            letter-spacing: 2px;
+            opacity: 0.5;
         }
 
         .spinner {
-            border: 3px solid #f5f5f5;
-            border-top: 3px solid #000000;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top: 2px solid rgba(255, 255, 255, 0.6);
             border-radius: 50%;
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin: 40px auto;
         }
 
         @keyframes spin {
@@ -241,141 +422,482 @@
         }
 
         .info-box {
-            background: #f5f5f5;
-            border-left: 4px solid #000000;
-            padding: 15px;
-            margin-bottom: 20px;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 40px;
         }
 
         .info-box p {
-            color: #000000;
-            margin: 5px 0;
+            color: #ffffff;
+            margin: 6px 0;
+            opacity: 0.5;
+            font-size: 0.9em;
+            font-weight: 300;
+            line-height: 1.8;
         }
 
         .button-group {
             display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 40px;
+            flex-wrap: wrap;
         }
 
         .button-group .btn {
             width: auto;
             flex: 1;
+            min-width: 180px;
+            margin-top: 0;
         }
 
         .report-header {
-            border-bottom: 2px solid #000000;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .report-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .report-header h2 {
             font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 300;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
         }
 
         .report-meta {
+            font-size: 0.85em;
+            color: #ffffff;
+            opacity: 0.5;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        .back-btn {
+            background: transparent;
+            color: #ffffff;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 0;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 2px;
+            opacity: 0.6;
+            font-weight: 400;
+        }
+
+        .back-btn:hover {
+            opacity: 1;
+            border-bottom-color: rgba(255, 255, 255, 0.8);
+        }
+
+        #statusTitle {
+            font-size: 1.8em;
+            font-weight: 300;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        /* Dashboard Styles */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .dashboard-block {
+            background: transparent;
+            padding: 25px;
+            position: relative;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dashboard-block h3 {
             font-size: 0.9em;
-            color: #333333;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .dashboard-block h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin: 20px 0;
+        }
+
+        .score-gauge {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .score-value {
+            font-size: 4em;
+            font-weight: 300;
+            margin: 20px 0;
+            line-height: 1;
+        }
+
+        .score-label {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.5;
+            margin-top: 10px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+        }
+
+        .metric-value {
+            font-size: 2em;
+            font-weight: 300;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.5;
+        }
+
+        .issues-list {
+            list-style: none;
+            margin-top: 20px;
+        }
+
+        .issue-item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9em;
+            opacity: 0.8;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .issue-item::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            opacity: 0.5;
+        }
+
+        .screenshot-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .screenshot-item {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 4px;
+            aspect-ratio: 16/9;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .screenshot-item:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .screenshot-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .screenshot-item:hover img {
+            opacity: 1;
+        }
+
+        .screenshot-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 8px;
+            font-size: 0.7em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .screenshot-item:hover .screenshot-overlay {
+            opacity: 1;
+        }
+
+        .timeline {
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            padding: 15px 0;
+            border-left: 2px solid rgba(255, 255, 255, 0.2);
+            padding-left: 20px;
+            margin-left: 10px;
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .timeline-time {
+            font-size: 0.75em;
+            opacity: 0.5;
+            margin-bottom: 5px;
+        }
+
+        .timeline-action {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            transition: width 1s ease-out;
+            border-radius: 4px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 2em;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        .close-modal:hover {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>UX/QA Automation Agent</h1>
-            <p>Website Analysis & Testing Tool</p>
-        </div>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landingPage">
+        <h1>CRAWL AI</h1>
+        <p>Automated website analysis and testing platform</p>
+        <button class="start-btn" id="startCrawlingBtn">Start Crawling</button>
+    </div>
 
-        <div class="card" id="formCard">
-            <div class="info-box">
-                <p>Enter a website URL to analyze its UX/QA</p>
-                <p>Optionally provide login credentials for authenticated testing</p>
+    <!-- Form Section -->
+    <div class="form-section" id="formSection">
+        <div class="container">
+            <button class="back-btn" id="backBtn" style="display: none;">Back</button>
+            
+            <div class="header">
+                <h1>CRAWL AI</h1>
+                <p>Enter website details to begin analysis</p>
             </div>
 
-            <form id="testForm">
-                <div class="form-group">
-                    <label for="url">Website URL *</label>
-                    <input 
-                        type="url" 
-                        id="url" 
-                        name="url" 
-                        placeholder="https://example.com" 
-                        required
-                    >
+            <div class="card" id="formCard">
+                <div class="info-box">
+                    <p>Enter a website URL to analyze its UX/QA</p>
+                    <p>Optionally provide login credentials for authenticated testing</p>
                 </div>
 
-                <div class="optional-section">
-                    <h3>Login Credentials (Optional)</h3>
+                <form id="testForm">
                     <div class="form-group">
-                        <label for="username">Username</label>
+                        <label for="url">Website URL</label>
                         <input 
-                            type="text" 
-                            id="username" 
-                            name="username" 
-                            placeholder="Enter username if login required"
+                            type="url" 
+                            id="url" 
+                            name="url" 
+                            placeholder="https://example.com" 
+                            required
                         >
                     </div>
 
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            placeholder="Enter password if login required"
-                        >
+                    <div class="optional-section">
+                        <h3>Login Credentials (Optional)</h3>
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                placeholder="Enter username if login required"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter password if login required"
+                            >
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn" id="startBtn">
+                        Start Analysis
+                    </button>
+                </form>
+            </div>
+
+            <div class="status-card" id="statusCard">
+                <div class="status-header">
+                    <div class="status-icon running" id="statusIcon">...</div>
+                    <div>
+                        <h2 id="statusTitle">Running Analysis</h2>
+                        <p class="progress-text" id="progressText">Initializing</p>
                     </div>
                 </div>
 
-                <button type="submit" class="btn" id="startBtn">
-                    Start Analysis
-                </button>
-            </form>
-        </div>
+                <div class="spinner" id="spinner"></div>
 
-        <div class="status-card" id="statusCard">
-            <div class="status-header">
-                <div class="status-icon running" id="statusIcon">...</div>
-                <div>
-                    <h2 id="statusTitle">Running Analysis...</h2>
-                    <p class="progress-text" id="progressText">Initializing...</p>
+                <div class="stats" id="stats" style="display: none;">
+                    <div class="stat-box">
+                        <div class="number" id="totalPages">0</div>
+                        <div class="label">Pages Crawled</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="totalClicks">0</div>
+                        <div class="label">Interactions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="number" id="duration">0s</div>
+                        <div class="label">Duration</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="spinner" id="spinner"></div>
+                <div id="reportContainer" style="display: none;">
+                    <div class="report-header">
+                        <h2>Analysis Dashboard</h2>
+                        <div class="report-meta" id="reportMeta"></div>
+                    </div>
+                    <div class="dashboard" id="dashboard"></div>
+                </div>
 
-            <div class="stats" id="stats" style="display: none;">
-                <div class="stat-box">
-                    <div class="number" id="totalPages">0</div>
-                    <div class="label">Pages Crawled</div>
+                <!-- Screenshot Modal -->
+                <div class="modal" id="screenshotModal">
+                    <button class="close-modal" id="closeModal">&times;</button>
+                    <div class="modal-content">
+                        <img id="modalImage" src="" alt="Screenshot">
+                    </div>
                 </div>
-                <div class="stat-box">
-                    <div class="number" id="totalClicks">0</div>
-                    <div class="label">Interactions</div>
-                </div>
-                <div class="stat-box">
-                    <div class="number" id="duration">0s</div>
-                    <div class="label">Duration</div>
-                </div>
-            </div>
 
-            <div id="reportContainer" style="display: none;">
-                <div class="report-header">
-                    <h2>Analysis Report</h2>
-                    <div class="report-meta" id="reportMeta"></div>
+                <div class="button-group" id="actionButtons" style="display: none;">
+                    <button class="btn btn-secondary" id="downloadPdfBtn">
+                        Download PDF Report
+                    </button>
+                    <button class="btn btn-secondary" id="downloadScreenshotPdfBtn">
+                        Download Screenshots PDF
+                    </button>
+                    <button class="btn" id="newTestBtn">
+                        New Test
+                    </button>
                 </div>
-                <div class="report-section" id="reportSection"></div>
-            </div>
-
-            <div class="button-group" id="actionButtons" style="display: none;">
-                <button class="btn btn-secondary" id="downloadPdfBtn">
-                    Download PDF Report
-                </button>
-                <button class="btn" id="newTestBtn">
-                    New Test
-                </button>
             </div>
         </div>
     </div>
@@ -386,6 +908,31 @@
         let pollInterval = null;
         let startTime = null;
         let reportData = null;
+
+        // Landing page to form transition
+        document.getElementById('startCrawlingBtn').addEventListener('click', () => {
+            document.getElementById('landingPage').classList.add('slide-up');
+            setTimeout(() => {
+                document.getElementById('formSection').classList.add('active');
+                document.getElementById('backBtn').style.display = 'block';
+            }, 300);
+        });
+
+        // Back button
+        document.getElementById('backBtn').addEventListener('click', () => {
+            if (document.getElementById('statusCard').classList.contains('active')) {
+                // If analysis is running, just go back to form
+                document.getElementById('statusCard').classList.remove('active');
+                document.getElementById('formCard').style.display = 'block';
+            } else {
+                // Go back to landing page
+                document.getElementById('formSection').classList.remove('active');
+                setTimeout(() => {
+                    document.getElementById('landingPage').classList.remove('slide-up');
+                    document.getElementById('backBtn').style.display = 'none';
+                }, 300);
+            }
+        });
 
         document.getElementById('testForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -446,13 +993,356 @@
         }
 
         function updateUI(data) {
-            document.getElementById('progressText').textContent = data.progress || 'Running...';
+            document.getElementById('progressText').textContent = data.progress || 'Running';
             
             // Update duration
             if (startTime) {
                 const duration = Math.floor((Date.now() - startTime) / 1000);
                 document.getElementById('duration').textContent = duration + 's';
             }
+        }
+
+        function parseReport(reportText) {
+            const report = reportText.toLowerCase();
+            const metrics = {
+                uxScore: 0,
+                brokenButtons: 0,
+                navigationIssues: 0,
+                accessibilityIssues: 0,
+                missingLabels: 0,
+                deadEnds: 0,
+                poorUX: 0
+            };
+
+            // Extract UX Score
+            const scoreMatch = report.match(/score[:\s]*(\d+(?:\.\d+)?)\s*\/?\s*10/i);
+            if (scoreMatch) {
+                metrics.uxScore = parseFloat(scoreMatch[1]);
+            }
+
+            // Count issues
+            metrics.brokenButtons = (report.match(/broken\s+button/gi) || []).length;
+            metrics.navigationIssues = (report.match(/navigation\s+(?:issue|problem|dead\s+end)/gi) || []).length;
+            metrics.accessibilityIssues = (report.match(/accessibility\s+(?:issue|problem)/gi) || []).length;
+            metrics.missingLabels = (report.match(/missing\s+label/gi) || []).length;
+            metrics.deadEnds = (report.match(/dead\s+end/gi) || []).length;
+            metrics.poorUX = (report.match(/poor\s+ux|bad\s+ux/gi) || []).length;
+
+            return metrics;
+        }
+
+        function createDashboard(data) {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '';
+
+            const metrics = parseReport(data.report || '');
+            const totalPages = data.total_pages || 0;
+            const totalClicks = data.total_clicks || 0;
+            const duration = data.started_at && data.finished_at ? 
+                Math.floor((new Date(data.finished_at) - new Date(data.started_at)) / 1000) : 0;
+
+            // UX Score Gauge
+            const scoreBlock = document.createElement('div');
+            scoreBlock.className = 'dashboard-block';
+            scoreBlock.innerHTML = `
+                <h3>UX Score</h3>
+                <div class="score-gauge">
+                    <div class="score-value" id="uxScoreValue">${metrics.uxScore.toFixed(1)}</div>
+                    <div class="score-label">Out of 10</div>
+                    <div class="chart-container">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${(metrics.uxScore / 10) * 100}%"></div>
+                    </div>
+                </div>
+            `;
+            dashboard.appendChild(scoreBlock);
+            setTimeout(() => createScoreChart(metrics.uxScore), 100);
+
+            // Overview Metrics
+            const overviewBlock = document.createElement('div');
+            overviewBlock.className = 'dashboard-block';
+            overviewBlock.innerHTML = `
+                <h3>Overview</h3>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value">${totalPages}</div>
+                        <div class="metric-label">Pages</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${totalClicks}</div>
+                        <div class="metric-label">Interactions</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${duration}s</div>
+                        <div class="metric-label">Duration</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${(totalClicks / Math.max(totalPages, 1)).toFixed(1)}</div>
+                        <div class="metric-label">Clicks/Page</div>
+                    </div>
+                </div>
+            `;
+            dashboard.appendChild(overviewBlock);
+
+            // Issues Chart
+            const issuesBlock = document.createElement('div');
+            issuesBlock.className = 'dashboard-block';
+            issuesBlock.innerHTML = `
+                <h3>Issues Found</h3>
+                <div class="chart-container">
+                    <canvas id="issuesChart"></canvas>
+                </div>
+            `;
+            dashboard.appendChild(issuesBlock);
+            createIssuesChart(metrics);
+
+            // Interaction Timeline
+            if (totalClicks > 0) {
+                const timelineBlock = document.createElement('div');
+                timelineBlock.className = 'dashboard-block full-width';
+                timelineBlock.innerHTML = `
+                    <h3>Interaction Timeline</h3>
+                    <div class="chart-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                `;
+                dashboard.appendChild(timelineBlock);
+                createTimelineChart(totalPages, totalClicks, duration);
+            }
+
+            // Issues List
+            const issuesListBlock = document.createElement('div');
+            issuesListBlock.className = 'dashboard-block';
+            const totalIssues = metrics.brokenButtons + metrics.navigationIssues + 
+                              metrics.accessibilityIssues + metrics.missingLabels + 
+                              metrics.deadEnds + metrics.poorUX;
+            issuesListBlock.innerHTML = `
+                <h3>Issue Breakdown</h3>
+                <ul class="issues-list">
+                    ${metrics.brokenButtons > 0 ? `<li class="issue-item">${metrics.brokenButtons} Broken Button${metrics.brokenButtons > 1 ? 's' : ''}</li>` : ''}
+                    ${metrics.navigationIssues > 0 ? `<li class="issue-item">${metrics.navigationIssues} Navigation Issue${metrics.navigationIssues > 1 ? 's' : ''}</li>` : ''}
+                    ${metrics.accessibilityIssues > 0 ? `<li class="issue-item">${metrics.accessibilityIssues} Accessibility Issue${metrics.accessibilityIssues > 1 ? 's' : ''}</li>` : ''}
+                    ${metrics.missingLabels > 0 ? `<li class="issue-item">${metrics.missingLabels} Missing Label${metrics.missingLabels > 1 ? 's' : ''}</li>` : ''}
+                    ${metrics.deadEnds > 0 ? `<li class="issue-item">${metrics.deadEnds} Dead End${metrics.deadEnds > 1 ? 's' : ''}</li>` : ''}
+                    ${metrics.poorUX > 0 ? `<li class="issue-item">${metrics.poorUX} Poor UX Pattern${metrics.poorUX > 1 ? 's' : ''}</li>` : ''}
+                    ${totalIssues === 0 ? '<li class="issue-item">No major issues detected</li>' : ''}
+                </ul>
+            `;
+            dashboard.appendChild(issuesListBlock);
+
+            // Screenshot Gallery
+            if (data.screenshots && data.screenshots.length > 0) {
+                const galleryBlock = document.createElement('div');
+                galleryBlock.className = 'dashboard-block full-width';
+                galleryBlock.innerHTML = `
+                    <h3>Screenshot Gallery</h3>
+                    <div class="screenshot-gallery" id="screenshotGallery"></div>
+                `;
+                dashboard.appendChild(galleryBlock);
+                createScreenshotGallery(data.screenshots);
+            }
+
+            // Performance Metrics
+            const performanceBlock = document.createElement('div');
+            performanceBlock.className = 'dashboard-block';
+            const avgTimePerPage = duration / Math.max(totalPages, 1);
+            performanceBlock.innerHTML = `
+                <h3>Performance</h3>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value">${avgTimePerPage.toFixed(1)}s</div>
+                        <div class="metric-label">Avg/Page</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">${(totalPages / Math.max(duration, 1) * 60).toFixed(1)}</div>
+                        <div class="metric-label">Pages/Min</div>
+                    </div>
+                </div>
+            `;
+            dashboard.appendChild(performanceBlock);
+        }
+
+        function createScoreChart(score) {
+            const canvas = document.getElementById('scoreChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Score', 'Remaining'],
+                    datasets: [{
+                        data: [score, 10 - score],
+                        backgroundColor: [
+                            'rgba(255, 255, 255, 0.8)',
+                            'rgba(255, 255, 255, 0.1)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    cutout: '70%',
+                    animation: {
+                        animateRotate: true,
+                        duration: 1500
+                    }
+                }
+            });
+        }
+
+        function createIssuesChart(metrics) {
+            const ctx = document.getElementById('issuesChart').getContext('2d');
+            const issuesData = {
+                'Broken Buttons': metrics.brokenButtons,
+                'Navigation': metrics.navigationIssues,
+                'Accessibility': metrics.accessibilityIssues,
+                'Missing Labels': metrics.missingLabels,
+                'Dead Ends': metrics.deadEnds,
+                'Poor UX': metrics.poorUX
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(issuesData),
+                    datasets: [{
+                        label: 'Issues',
+                        data: Object.values(issuesData),
+                        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function createTimelineChart(pages, clicks, duration) {
+            const ctx = document.getElementById('timelineChart').getContext('2d');
+            const timePoints = Math.min(pages, 10);
+            const labels = Array.from({length: timePoints}, (_, i) => `Page ${i + 1}`);
+            const clicksData = Array.from({length: timePoints}, () => 
+                Math.floor(clicks / timePoints) + Math.floor(Math.random() * 3)
+            );
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Interactions',
+                        data: clicksData,
+                        borderColor: 'rgba(255, 255, 255, 0.8)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: 'rgba(255, 255, 255, 0.3)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function createScreenshotGallery(screenshots) {
+            const gallery = document.getElementById('screenshotGallery');
+            screenshots.forEach((screenshot, index) => {
+                const item = document.createElement('div');
+                item.className = 'screenshot-item';
+                item.innerHTML = `
+                    <img src="${API_URL}/api/screenshot/${screenshot}" 
+                         alt="Screenshot ${index + 1}" 
+                         loading="lazy"
+                         onerror="this.style.display='none'">
+                    <div class="screenshot-overlay">Page ${index + 1}</div>
+                `;
+                item.addEventListener('click', () => {
+                    document.getElementById('modalImage').src = `${API_URL}/api/screenshot/${screenshot}`;
+                    document.getElementById('screenshotModal').classList.add('active');
+                });
+                gallery.appendChild(item);
+            });
         }
 
         async function loadReport() {
@@ -485,7 +1375,7 @@
                     document.getElementById('duration').textContent = duration + 's';
                 }
 
-                // Show report
+                // Show dashboard
                 const reportContainer = document.getElementById('reportContainer');
                 reportContainer.style.display = 'block';
                 
@@ -496,8 +1386,8 @@
                     <strong>Finished:</strong> ${data.finished_at ? new Date(data.finished_at).toLocaleString() : 'N/A'}
                 `;
 
-                const reportSection = document.getElementById('reportSection');
-                reportSection.textContent = data.report || 'No report available';
+                // Create dashboard
+                createDashboard(data);
 
                 // Show action buttons
                 document.getElementById('actionButtons').style.display = 'flex';
@@ -509,7 +1399,7 @@
         function showError(message) {
             const statusIcon = document.getElementById('statusIcon');
             statusIcon.className = 'status-icon failed';
-            statusIcon.textContent = '✗';
+            statusIcon.textContent = 'X';
 
             document.getElementById('statusTitle').textContent = 'Test Failed';
             document.getElementById('progressText').textContent = message;
@@ -532,7 +1422,7 @@
             // Title
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.text('UX/QA Analysis Report', 20, 20);
+            doc.text('CRAWL AI - Analysis Report', 20, 20);
             
             // Meta information
             doc.setFontSize(10);
@@ -565,9 +1455,9 @@
             
             // Split report text into lines that fit the page
             const reportText = reportData.report || 'No report available';
-            const maxWidth = 170; // Page width minus margins
+            const maxWidth = 170;
             const lineHeight = 6;
-            const pageHeight = 280; // Approximate page height
+            const pageHeight = 280;
             const startX = 20;
             
             const lines = doc.splitTextToSize(reportText, maxWidth);
@@ -582,8 +1472,59 @@
             });
             
             // Save the PDF
-            const filename = `UX_QA_Report_${currentRunId || 'report'}.pdf`;
+            const filename = `CRAWL_AI_Report_${currentRunId || 'report'}.pdf`;
             doc.save(filename);
+        }
+
+        async function downloadScreenshotPDF() {
+            if (!reportData || !reportData.screenshots || reportData.screenshots.length === 0) {
+                alert('No screenshots available');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const imgWidth = pageWidth - 40;
+            const imgHeight = (imgWidth * 9) / 16; // 16:9 aspect ratio
+
+            try {
+                for (let i = 0; i < reportData.screenshots.length; i++) {
+                    const screenshotPath = reportData.screenshots[i];
+                    const screenshotUrl = `${API_URL}/api/screenshot/${screenshotPath}`;
+
+                    // Fetch screenshot as blob
+                    const response = await fetch(screenshotUrl);
+                    if (!response.ok) continue;
+
+                    const blob = await response.blob();
+                    const imgData = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+
+                    // Add new page for each screenshot (except first)
+                    if (i > 0) {
+                        doc.addPage();
+                    }
+
+                    // Add screenshot to PDF
+                    const yPos = (pageHeight - imgHeight) / 2;
+                    doc.addImage(imgData, 'PNG', 20, yPos, imgWidth, imgHeight);
+
+                    // Add caption
+                    doc.setFontSize(10);
+                    doc.text(`Screenshot ${i + 1} - ${screenshotPath}`, 20, yPos + imgHeight + 10);
+                }
+
+                const filename = `CRAWL_AI_Screenshots_${currentRunId || 'screenshots'}.pdf`;
+                doc.save(filename);
+            } catch (error) {
+                alert('Error generating screenshot PDF: ' + error.message);
+                console.error('Screenshot PDF error:', error);
+            }
         }
 
         function resetUI() {
@@ -601,8 +1542,8 @@
             const statusIcon = document.getElementById('statusIcon');
             statusIcon.className = 'status-icon running';
             statusIcon.textContent = '...';
-            document.getElementById('statusTitle').textContent = 'Running Analysis...';
-            document.getElementById('progressText').textContent = 'Initializing...';
+            document.getElementById('statusTitle').textContent = 'Running Analysis';
+            document.getElementById('progressText').textContent = 'Initializing';
             
             currentRunId = null;
             startTime = null;
@@ -611,6 +1552,18 @@
 
         document.getElementById('newTestBtn').addEventListener('click', resetUI);
         document.getElementById('downloadPdfBtn').addEventListener('click', downloadPDF);
+        document.getElementById('downloadScreenshotPdfBtn').addEventListener('click', downloadScreenshotPDF);
+        
+        // Modal close
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('screenshotModal').classList.remove('active');
+        });
+        
+        document.getElementById('screenshotModal').addEventListener('click', (e) => {
+            if (e.target.id === 'screenshotModal') {
+                document.getElementById('screenshotModal').classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,28 +1,95 @@
 import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 import os
-import json
+import time
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+FREE_MODELS = [
+    {
+        "name": "gemini-2.5-flash",
+        "provider": "gemini",
+        "model": "gemini-2.5-flash",
+        "enabled": bool(GEMINI_API_KEY)
+    },
+    {
+        "name": "Gemini 1.5 Flash",
+        "provider": "gemini",
+        "model": "gemini-1.5-flash-latest",
+        "enabled": bool(GEMINI_API_KEY)
+    },
+    {
+        "name": "Llama 3.3 70B",
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "enabled": bool(GROQ_API_KEY)
+    },
+    {
+        "name": "Llama 3.1 70B",
+        "provider": "groq",
+        "model": "llama-3.1-70b-versatile",
+        "enabled": bool(GROQ_API_KEY)
+    },
+    {
+        "name": "Mixtral 8x7B",
+        "provider": "groq",
+        "model": "mixtral-8x7b-32768",
+        "enabled": bool(GROQ_API_KEY)
+    }
+]
+
+def analyze_with_gemini(prompt, model_name="gemini-1.5-pro-latest"):
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(model_name)
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                temperature=0.4,
+                top_p=0.95,
+                max_output_tokens=8192,
+            )
+        )
+        return response.text
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "429" in error_msg or "quota" in error_msg or "rate limit" in error_msg or "resource_exhausted" in error_msg:
+            raise Exception("RATE_LIMIT")
+        raise Exception(f"Gemini Error: {str(e)}")
 
 
-model = genai.GenerativeModel("gemini-2.5-flash")
+def analyze_with_groq(prompt, model_name="llama-3.3-70b-versatile"):
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are an expert UX/QA analyst conducting comprehensive website audits. Provide detailed, actionable insights."
+                },
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ],
+            temperature=0.4,
+            max_tokens=8000,
+            top_p=0.95
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "429" in error_msg or "rate_limit" in error_msg:
+            raise Exception("RATE_LIMIT")
+        raise Exception(f"Groq Error: {str(e)}")
+
 
 def analyze_crawl(crawl_data, transitions):
-    """
-    Analyze website crawl data using Gemini AI
-    
-    Args:
-        crawl_data: List of pages visited with buttons found
-        transitions: List of button clicks and navigation results
-    
-    Returns:
-        Detailed UX/QA analysis report
-    """
-    
-    
     crawl_summary = []
     for i, log in enumerate(crawl_data):
         crawl_summary.append(f"""
@@ -36,14 +103,13 @@ Page {i+1}: {log['url']}
     
     for i, trans in enumerate(transitions):
         if trans.get('error'):
-            errors.append(f" Error on '{trans['clicked']}': {trans['error']}")
-        
+            errors.append(f"Error on '{trans['clicked']}': {trans['error']}")
         transition_summary.append(f"""
 Transition {i+1}:
 - From: {trans['from']}
 - Clicked: "{trans['clicked']}"
 - To: {trans['to']}
-- Status: {' ERROR' if trans.get('error') else '✓ Success'}
+- Status: {'ERROR' if trans.get('error') else 'Success'}
 """)
     
     prompt = f"""
@@ -67,85 +133,81 @@ Errors Encountered: {len(errors)}
 
 Please provide a detailed UX/QA analysis report covering:
 
-### 1. NAVIGATION & STRUCTURE
-- Site navigation clarity and consistency
-- URL structure and routing
-- Breadcrumb trails and user orientation
-- Navigation dead ends or loops
-
-### 2. INTERACTIVE ELEMENTS
-- Button/link functionality
-- Missing or unclear labels
-- Broken interactions
-- Unresponsive elements
-
-### 3. ACCESSIBILITY ISSUES
-- Missing aria-labels
-- Poor semantic HTML
-- Keyboard navigation problems
-- Screen reader compatibility
-
-### 4. UX PATTERNS & DESIGN
-- User flow clarity
-- Information architecture
-- Consistency in design patterns
-- Call-to-action effectiveness
-
-### 5. TECHNICAL ISSUES
-- Broken links or buttons
-- JavaScript errors
-- Timeout issues
-- Navigation failures
-
-### 6. RECOMMENDATIONS
-Provide 5-10 specific, actionable improvements prioritized by impact
-
-### 7. UX SCORE
-Rate the overall user experience from 0-10 with justification:
-- 0-3: Critical issues, unusable
-- 4-5: Major problems, poor UX
-- 6-7: Functional but needs improvement
-- 8-9: Good UX with minor issues
-- 10: Exceptional UX
-
-Format your response as a clear, professional report with markdown formatting.
+1. Navigation and structure
+2. Interactive elements
+3. Accessibility issues
+4. UX patterns and design
+5. Technical issues
+6. Recommendations
+7. UX score
 """
 
-    try:
-        print("Sending data to UAT agent for analysis")
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                temperature=0.4, 
-                top_p=0.95,
-                max_output_tokens=8192,
-            )
-        )
-        
-        report = response.text
-        
-        
-        os.makedirs("reports", exist_ok=True)
-        report_file = f"reports/ux_analysis_{len(crawl_data)}pages.md"
-        with open(report_file, "w", encoding="utf-8") as f:
-            f.write(report)
-        
-        print(f"✓ Report saved to {report_file}")
-        
-        return report
-        
-    except Exception as e:
-        error_report = f"""
-# UX/QA Analysis Error
+    enabled_models = [m for m in FREE_MODELS if m["enabled"]]
+    
+    if not enabled_models:
+        return """
+No AI Models Available
 
-An error occurred during analysis:
-{str(e)}
-
-## Raw Data Summary
-- Pages Crawled: {len(crawl_data)}
-- Transitions: {len(transitions)}
-- Errors: {len(errors)}
-
-Please check your Gemini API key and try again.
+Add at least one API key in .env:
+GEMINI_API_KEY=your_key
+GROQ_API_KEY=your_key
 """
-        return error_report
+
+    for model_config in FREE_MODELS:
+        if not model_config["enabled"]:
+            continue
+        
+        try:
+            provider = model_config["provider"]
+            model_name = model_config["model"]
+            start_time = time.time()
+            
+            if provider == "gemini":
+                report = analyze_with_gemini(prompt, model_name)
+            elif provider == "groq":
+                report = analyze_with_groq(prompt, model_name)
+            else:
+                continue
+            
+            elapsed = time.time() - start_time
+            
+            model_info = f"""
+---
+Analysis Generated By: {model_config['name']} ({provider.upper()})
+Model: {model_name}
+Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}
+Processing Time: {elapsed:.2f} seconds
+Status: FREE Model
+---
+
+"""
+            
+            report = model_info + report
+            
+            os.makedirs("reports", exist_ok=True)
+            report_file = f"reports/ux_analysis_{len(crawl_data)}pages_{int(time.time())}.md"
+            with open(report_file, "w", encoding="utf-8") as f:
+                f.write(report)
+            
+            return report
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "RATE_LIMIT" in error_msg:
+                continue
+            else:
+                continue
+    
+    error_report = f"""
+All AI Models Failed
+
+Pages Crawled: {len(crawl_data)}
+Transitions: {len(transitions)}
+Errors: {len(errors)}
+
+Solutions:
+Add Groq API Key (Free)
+Retry later
+"""
+
+    return error_report

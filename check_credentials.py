@@ -5,3 +5,4 @@ cursor = conn.cursor()
 
 cursor.execute("SELECT * FROM credentials")
 print(cursor.fetchall())
+
