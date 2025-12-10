@@ -4,7 +4,7 @@ from urllib.parse import urlparse, urljoin
 from collections import deque
 import random
 
-def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
+def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
     """
     Enhanced crawler for web applications with better navigation and element discovery
     
@@ -37,7 +37,10 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
     def normalize_url(url):
         """Normalize URL by removing fragments and query params for comparison"""
         parsed = urlparse(url)
-        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+        # Remove trailing slashes for consistency
+        path = parsed.path.rstrip('/')
+        # Normalize to lowercase for comparison (but keep original for navigation)
+        return f"{parsed.scheme}://{parsed.netloc}{path}".lower()
     
     def wait_for_page_load(timeout=15000):
         """Wait for page to be fully loaded"""
@@ -52,6 +55,15 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
                 pass
         # Additional wait for dynamic content
         time.sleep(0.5)
+        
+        # Scroll page to trigger lazy-loaded content
+        try:
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            time.sleep(0.3)
+            page.evaluate("window.scrollTo(0, 0)")
+            time.sleep(0.2)
+        except:
+            pass
     
     def find_clickable_elements():
         """Find all clickable elements on the page"""
@@ -59,15 +71,36 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
         seen_elements = set()  # Track by element handle to avoid duplicates
         
         # Find all links (including those without href but with onclick)
-        links = page.query_selector_all("a[href], a[onclick], a[data-href]")
+        # More comprehensive link discovery
+        links = page.query_selector_all("a[href], a[onclick], a[data-href], a[data-url], a[data-link], a[data-navigate], a[data-route], a[data-page], nav a, footer a, header a, .nav a, .menu a, .sidebar a, main a, article a, section a, [role='link'], [role='menuitem']")
         for link in links:
             try:
-                if link.is_visible():
+                # Check visibility more leniently - include elements that might become visible
+                try:
+                    is_visible = link.is_visible()
+                except:
+                    is_visible = True  # Assume visible if check fails
+                
+                if is_visible:
                     # Get href from various attributes
                     href = (link.get_attribute("href") or 
                            link.get_attribute("data-href") or
-                           link.get_attribute("data-url"))
-                    if href and not href.startswith(('javascript:', 'mailto:', 'tel:', '#')):
+                           link.get_attribute("data-url") or
+                           link.get_attribute("data-link") or
+                           link.get_attribute("data-navigate") or
+                           link.get_attribute("data-route") or
+                           link.get_attribute("data-page"))
+                    
+                    # Also check onclick for URL patterns
+                    if not href:
+                        onclick = link.get_attribute("onclick") or ""
+                        # Try to extract URL from onclick handler
+                        import re
+                        url_match = re.search(r'["\']([^"\']+\.html?[^"\']*)["\']', onclick)
+                        if url_match:
+                            href = url_match.group(1)
+                    
+                    if href and not href.startswith(('javascript:', 'mailto:', 'tel:', '#', 'void(0)')):
                         elem_id = id(link)
                         if elem_id not in seen_elements:
                             seen_elements.add(elem_id)
@@ -187,7 +220,7 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
         # Loop detection: if we've visited this URL pattern too many times, skip it
         if normalized in url_visit_count:
             url_visit_count[normalized] += 1
-            if url_visit_count[normalized] > 3:  # Skip if visited more than 3 times
+            if url_visit_count[normalized] > 20:  # Increased: Skip if visited more than 20 times (more lenient)
                 if normalized not in skipped_loops:
                     print(f"    ⚠ Skipping potential loop: {url} (visited {url_visit_count[normalized]} times)")
                     skipped_loops.add(normalized)
@@ -218,8 +251,74 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
             except:
                 pass
             
-            # Find all clickable elements
+            # Scroll to trigger lazy-loaded content before finding elements
+            # More aggressive scrolling to find all dynamically loaded content
+            try:
+                # Scroll down to load more content (multiple scrolls to trigger all lazy loaders)
+                page_height = page.evaluate("document.body.scrollHeight")
+                scroll_steps = max(5, page_height // 300)  # More scroll steps for better coverage
+                for i in range(scroll_steps):
+                    scroll_pos = (i + 1) * (page_height // scroll_steps)
+                    page.evaluate(f"window.scrollTo(0, {scroll_pos})")
+                    time.sleep(0.3)  # Slightly longer wait for content to load
+                # Scroll back up and wait for any animations
+                page.evaluate("window.scrollTo(0, 0)")
+                time.sleep(0.5)  # Wait longer for any dynamic content to appear
+                
+                # Try clicking "Load More" or "Show More" buttons if they exist
+                try:
+                    load_more_selectors = [
+                        "button:has-text('Load More')",
+                        "button:has-text('Show More')",
+                        "button:has-text('See More')",
+                        "[data-load-more]",
+                        ".load-more",
+                        ".show-more",
+                        "[aria-label*='more' i]"
+                    ]
+                    for selector in load_more_selectors:
+                        try:
+                            load_more_btn = page.query_selector(selector)
+                            if load_more_btn and load_more_btn.is_visible():
+                                load_more_btn.click()
+                                time.sleep(1)  # Wait for content to load
+                                # Re-scroll after loading more
+                                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                                time.sleep(0.5)
+                                break
+                        except:
+                            continue
+                except:
+                    pass
+            except:
+                pass
+            
+            # Find all clickable elements (first pass)
             clickable_elements = find_clickable_elements()
+            
+            # Try to find more links by extracting from navigation elements
+            try:
+                # Look for links in common navigation patterns
+                nav_links = page.query_selector_all("nav a, .navigation a, .nav-menu a, .main-menu a, ul.menu a, .sidebar a, footer a, header a")
+                seen_hrefs = {elem.get('href') for elem in clickable_elements if elem.get('href')}
+                for nav_link in nav_links:
+                    try:
+                        href = (nav_link.get_attribute("href") or 
+                               nav_link.get_attribute("data-href") or
+                               nav_link.get_attribute("data-url"))
+                        if href and not href.startswith(('javascript:', 'mailto:', 'tel:', '#')) and href not in seen_hrefs:
+                            elem_id = id(nav_link)
+                            if elem_id not in {id(e['element']) for e in clickable_elements}:
+                                clickable_elements.append({
+                                    'element': nav_link,
+                                    'type': 'link',
+                                    'href': href
+                                })
+                                seen_hrefs.add(href)
+                    except:
+                        continue
+            except:
+                pass
             
             # Extract button/link labels
             element_labels = [get_element_label(elem['element']) for elem in clickable_elements]
@@ -474,7 +573,7 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
     
     # Process queue - continue until queue is empty or no new pages found
     consecutive_no_new = 0
-    max_consecutive_no_new = 10  # Increased: Stop if no new pages found after 10 attempts
+    max_consecutive_no_new = 100  # Increased: Stop if no new pages found after 100 attempts (very persistent)
     
     while url_queue:
         # Check if we should stop (max_pages limit)
@@ -488,7 +587,7 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
         
         if visit_url(url, depth):
             # Small delay between pages
-            time.sleep(0.3)  # Reduced delay
+            time.sleep(0.2)  # Reduced delay for faster crawling
             
             # Reset counter if we found a new page or new interactions
             if len(visited) > pages_before or len(transitions) > interactions_before:
@@ -498,14 +597,19 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
         else:
             consecutive_no_new += 1
         
-        # Stop if we haven't found new pages in a while AND queue is empty
-        if consecutive_no_new >= max_consecutive_no_new and not url_queue:
-            print(f"  No new pages found after {max_consecutive_no_new} attempts, stopping crawl")
+        # Print progress every 5 pages for better visibility
+        if len(visited) % 5 == 0 and len(visited) > 0:
+            print(f"  Progress: {len(visited)} pages visited, {len(url_queue)} in queue, {len(transitions)} interactions")
+        
+        # Stop if we haven't found new pages in a while AND queue is completely empty
+        # Only stop if queue is completely empty (more persistent crawling)
+        if consecutive_no_new >= max_consecutive_no_new and len(url_queue) == 0:
+            print(f"  No new pages found after {max_consecutive_no_new} attempts and queue is empty, stopping crawl")
             break
         
         # Safety check: if queue is getting too large, we might be in a loop
-        if len(url_queue) > 2000:  # Increased limit
-            print(f"  ⚠ Queue size exceeded 2000, stopping to prevent infinite loop")
+        if len(url_queue) > 50000:  # Increased limit to allow many more pages
+            print(f"  ⚠ Queue size exceeded 50000, stopping to prevent infinite loop")
             break
     
     print(f"\n✓ Crawl summary: {len(visited)} pages, {len(transitions)} interactions")

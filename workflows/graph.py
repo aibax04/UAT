@@ -89,7 +89,7 @@ def run_crawl(state: State) -> State:
             page, 
             state["run_id"],
             start_url=current_url,
-            depth_limit=10,  # Increased depth limit
+            depth_limit=100,  # Very high depth limit for comprehensive crawling
             max_pages=None   # No limit - crawl until all pages found
         )
 

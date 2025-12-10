@@ -14,31 +14,50 @@ FREE_MODELS = [
         "name": "gemini-2.5-flash",
         "provider": "gemini",
         "model": "gemini-2.5-flash",
-        "enabled": bool(GEMINI_API_KEY)
+        "enabled": bool(GEMINI_API_KEY),
+        "priority": 1
     },
     {
         "name": "Gemini 1.5 Flash",
         "provider": "gemini",
         "model": "gemini-1.5-flash-latest",
-        "enabled": bool(GEMINI_API_KEY)
+        "enabled": bool(GEMINI_API_KEY),
+        "priority": 2
+    },
+    {
+        "name": "GPT-OSS-120B",
+        "provider": "groq",
+        "model": "openai/gpt-oss-120b",
+        "enabled": bool(GROQ_API_KEY),
+        "priority": 3
     },
     {
         "name": "Llama 3.3 70B",
         "provider": "groq",
         "model": "llama-3.3-70b-versatile",
-        "enabled": bool(GROQ_API_KEY)
+        "enabled": bool(GROQ_API_KEY),
+        "priority": 4
     },
     {
         "name": "Llama 3.1 70B",
         "provider": "groq",
         "model": "llama-3.1-70b-versatile",
-        "enabled": bool(GROQ_API_KEY)
+        "enabled": bool(GROQ_API_KEY),
+        "priority": 5
     },
     {
         "name": "Mixtral 8x7B",
         "provider": "groq",
         "model": "mixtral-8x7b-32768",
-        "enabled": bool(GROQ_API_KEY)
+        "enabled": bool(GROQ_API_KEY),
+        "priority": 6
+    },
+    {
+        "name": "Llama 3.1 8B Instant",
+        "provider": "groq",
+        "model": "llama-3.1-8b-instant",
+        "enabled": bool(GROQ_API_KEY),
+        "priority": 7
     }
 ]
 
@@ -57,14 +76,24 @@ def analyze_with_gemini(prompt, model_name="gemini-1.5-pro-latest"):
         return response.text
     except Exception as e:
         error_msg = str(e).lower()
-        if "429" in error_msg or "quota" in error_msg or "rate limit" in error_msg or "resource_exhausted" in error_msg:
+        error_str = str(e)
+        # Check for rate limit/quota errors
+        if any(keyword in error_msg for keyword in ["429", "quota", "rate limit", "resource_exhausted", "quota exceeded"]):
             raise Exception("RATE_LIMIT")
-        raise Exception(f"Gemini Error: {str(e)}")
+        # Re-raise with original message for other errors
+        raise Exception(f"Gemini Error: {error_str}")
 
 
 def analyze_with_groq(prompt, model_name="llama-3.3-70b-versatile"):
     try:
+        # Initialize Groq client - updated to version 0.37.1+ which fixes proxies issue
+        if not GROQ_API_KEY:
+            raise Exception("GROQ_API_KEY is not set")
+        
+        # Use basic Groq initialization - newer versions (0.37.1+) handle proxies correctly
         client = Groq(api_key=GROQ_API_KEY)
+        
+        # Create chat completion with only supported parameters
         response = client.chat.completions.create(
             model=model_name,
             messages=[
@@ -82,6 +111,12 @@ def analyze_with_groq(prompt, model_name="llama-3.3-70b-versatile"):
             top_p=0.95
         )
         return response.choices[0].message.content
+    except TypeError as e:
+        # Handle TypeError for unsupported arguments (like proxies in older versions)
+        error_msg = str(e)
+        if "proxies" in error_msg.lower() or "unexpected keyword" in error_msg.lower():
+            raise Exception(f"Groq client error: {error_msg}. Please ensure you have groq>=0.37.1 installed. Try: pip install --upgrade groq")
+        raise Exception(f"Groq TypeError: {error_msg}")
     except Exception as e:
         error_msg = str(e).lower()
         if "429" in error_msg or "rate_limit" in error_msg:
@@ -220,7 +255,11 @@ GEMINI_API_KEY=your_key
 GROQ_API_KEY=your_key
 """
 
-    for model_config in FREE_MODELS:
+    # Sort models by priority (Gemini first, then Groq)
+    sorted_models = sorted(enabled_models, key=lambda x: x.get("priority", 999))
+    
+    last_error = None
+    for model_config in sorted_models:
         if not model_config["enabled"]:
             continue
         
@@ -260,9 +299,15 @@ Status: FREE Model
             
         except Exception as e:
             error_msg = str(e)
-            if "RATE_LIMIT" in error_msg:
+            last_error = error_msg
+            error_lower = error_msg.lower()
+            # If it's a rate limit error, try next model
+            if "RATE_LIMIT" in error_msg or "429" in error_msg or "quota" in error_lower or "rate limit" in error_lower or "resource_exhausted" in error_lower:
+                print(f"Rate limit/quota exceeded on {model_config['name']}, trying next model...")
                 continue
+            # For other errors, also try next model (fallback behavior)
             else:
+                print(f"Error with {model_config['name']}: {error_msg}, trying next model...")
                 continue
     
     error_report = f"""
