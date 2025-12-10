@@ -56,55 +56,102 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
     def find_clickable_elements():
         """Find all clickable elements on the page"""
         elements = []
+        seen_elements = set()  # Track by element handle to avoid duplicates
         
-        # Find all links
-        links = page.query_selector_all("a[href]")
+        # Find all links (including those without href but with onclick)
+        links = page.query_selector_all("a[href], a[onclick], a[data-href]")
         for link in links:
             try:
                 if link.is_visible():
-                    href = link.get_attribute("href")
+                    # Get href from various attributes
+                    href = (link.get_attribute("href") or 
+                           link.get_attribute("data-href") or
+                           link.get_attribute("data-url"))
                     if href and not href.startswith(('javascript:', 'mailto:', 'tel:', '#')):
-                        elements.append({
-                            'element': link,
-                            'type': 'link',
-                            'href': href
-                        })
+                        elem_id = id(link)
+                        if elem_id not in seen_elements:
+                            seen_elements.add(elem_id)
+                            elements.append({
+                                'element': link,
+                                'type': 'link',
+                                'href': href
+                            })
             except:
                 continue
         
-        # Find all buttons
+        # Find all buttons and form inputs
         buttons = page.query_selector_all(
-            "button, input[type='button'], input[type='submit'], [role='button']"
+            "button, input[type='button'], input[type='submit'], input[type='reset'], [role='button'], [type='button']"
         )
         for btn in buttons:
             try:
                 if btn.is_visible() and btn.is_enabled():
-                    elements.append({
-                        'element': btn,
-                        'type': 'button',
-                        'href': None
-                    })
+                    elem_id = id(btn)
+                    if elem_id not in seen_elements:
+                        seen_elements.add(elem_id)
+                        elements.append({
+                            'element': btn,
+                            'type': 'button',
+                            'href': None
+                        })
             except:
                 continue
         
         # Find clickable divs/spans with onclick or data attributes
         clickable_divs = page.query_selector_all(
-            "[onclick], [data-href], [data-url], [data-link], .clickable, [class*='click'], [class*='link']"
+            "[onclick], [data-href], [data-url], [data-link], [data-action], [data-target], .clickable, [class*='click'], [class*='link'], [class*='button'], [tabindex='0']"
         )
         for div in clickable_divs:
             try:
                 if div.is_visible():
                     href = (div.get_attribute("data-href") or 
                            div.get_attribute("data-url") or 
-                           div.get_attribute("data-link"))
-                    elements.append({
-                        'element': div,
-                        'type': 'div',
-                        'href': href
-                    })
+                           div.get_attribute("data-link") or
+                           div.get_attribute("data-action"))
+                    elem_id = id(div)
+                    if elem_id not in seen_elements:
+                        seen_elements.add(elem_id)
+                        elements.append({
+                            'element': div,
+                            'type': 'div',
+                            'href': href
+                        })
             except:
                 continue
         
+        # Find select dropdowns
+        selects = page.query_selector_all("select")
+        for sel in selects:
+            try:
+                if sel.is_visible() and sel.is_enabled():
+                    elem_id = id(sel)
+                    if elem_id not in seen_elements:
+                        seen_elements.add(elem_id)
+                        elements.append({
+                            'element': sel,
+                            'type': 'select',
+                            'href': None
+                        })
+            except:
+                continue
+        
+        # Find checkboxes and radio buttons
+        checkboxes = page.query_selector_all("input[type='checkbox'], input[type='radio']")
+        for cb in checkboxes:
+            try:
+                if cb.is_visible() and cb.is_enabled():
+                    elem_id = id(cb)
+                    if elem_id not in seen_elements:
+                        seen_elements.add(elem_id)
+                        elements.append({
+                            'element': cb,
+                            'type': 'checkbox',
+                            'href': None
+                        })
+            except:
+                continue
+        
+        print(f"    Discovered {len(elements)} total clickable elements")
         # Shuffle to explore different paths
         random.shuffle(elements)
         return elements
@@ -177,24 +224,37 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
             # Extract button/link labels
             element_labels = [get_element_label(elem['element']) for elem in clickable_elements]
             
-            logs.append({
+            # Click ALL elements on the page - no limit
+            click_count = 0
+            page_transitions = []  # Track transitions for this page
+            processed_elements = set()  # Track processed elements to avoid duplicates
+            
+            # Initialize log entry (will be updated with click_count later)
+            log_entry = {
                 "url": url,
                 "buttons": element_labels,
                 "screenshot": screenshot_path,
-                "element_count": len(clickable_elements)
-            })
+                "element_count": len(clickable_elements),
+                "click_count": 0,
+                "transitions_count": 0
+            }
+            logs.append(log_entry)
             
-            # Try to click/interact with elements - prioritize unique URLs
-            click_count = 0
-            # Higher limit to crawl more elements, but not unlimited to avoid issues
-            max_clicks_per_page = min(50, len(clickable_elements))  # Up to 50 clicks per page
-            
-            # Sort elements: prioritize links with unique URLs
+            # Sort elements: prioritize links with unique URLs, but process ALL elements
             elements_with_urls = []
             elements_without_urls = []
             seen_urls = set()
             
             for elem_data in clickable_elements:
+                # Create unique identifier for element
+                try:
+                    elem_id = f"{elem_data['type']}_{get_element_label(elem_data['element'])}"
+                    if elem_id in processed_elements:
+                        continue
+                    processed_elements.add(elem_id)
+                except:
+                    pass
+                
                 if elem_data['type'] == 'link' and elem_data['href']:
                     full_href = urljoin(url, elem_data['href'])
                     normalized_href = normalize_url(full_href)
@@ -204,13 +264,24 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
                 else:
                     elements_without_urls.append(elem_data)
             
-            # Prioritize elements with unique URLs first
+            # Prioritize elements with unique URLs first, but process ALL
             prioritized_elements = elements_with_urls + elements_without_urls
             
-            for elem_data in prioritized_elements[:max_clicks_per_page]:
-                # Check max_pages limit if set
+            print(f"    Found {len(prioritized_elements)} clickable elements, processing all...")
+            
+            # Process ALL elements, not just a limited subset
+            elements_processed = 0
+            for elem_data in prioritized_elements:
+                elements_processed += 1
+                if elements_processed % 10 == 0:
+                    print(f"    Processed {elements_processed}/{len(prioritized_elements)} elements...")
+                # Check max_pages limit if set (only for new page navigation)
                 if max_pages and len(visited) >= max_pages:
-                    break
+                    # Still process buttons that don't navigate, just don't add new pages
+                    if elem_data['type'] != 'link' or not elem_data.get('href'):
+                        pass  # Continue processing non-navigation elements
+                    else:
+                        break
                 
                 try:
                     element = elem_data['element']
@@ -227,10 +298,11 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
                         full_href = urljoin(url, href)
                         normalized_href = normalize_url(full_href)
                         
-                        # Skip external links and already visited
-                        if not is_same_domain(full_href) or normalized_href in visited:
+                        # Skip external links
+                        if not is_same_domain(full_href):
                             continue
                         
+                        # Still click and record even if visited (for interaction tracking)
                         current_url = page.url
                         
                         # Click the link
@@ -243,6 +315,17 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
                                 page.goto(full_href, wait_until="domcontentloaded", timeout=15000)
                                 wait_for_page_load()
                             except:
+                                # Still record the attempt - ALWAYS record transitions
+                                transition_data = {
+                                    "from": current_url,
+                                    "clicked": label,
+                                    "to": current_url,
+                                    "screenshot": None,
+                                    "error": "Navigation failed"
+                                }
+                                transitions.append(transition_data)
+                                page_transitions.append(transition_data)
+                                click_count += 1
                                 continue
                         
                         new_url = page.url
@@ -255,71 +338,130 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
                         except:
                             trans_screenshot = None
                         
-                        transitions.append({
+                        transition_data = {
                             "from": current_url,
                             "clicked": label,
                             "to": new_url,
                             "screenshot": trans_screenshot,
                             "error": None
-                        })
+                        }
+                        transitions.append(transition_data)
+                        page_transitions.append(transition_data)
                         
-                        # Add to queue if not visited
+                        # Add to queue if not visited (for new page exploration)
                         if normalized_new not in visited and is_same_domain(new_url):
                             url_queue.append((new_url, depth + 1))
-                            click_count += 1
+                        
+                        click_count += 1
+                        
+                        # If we navigated to a new page, go back to continue processing original page elements
+                        if normalized_new != normalize_url(current_url):
+                            try:
+                                # Go back to original page to continue clicking remaining elements
+                                page.goto(current_url, wait_until="domcontentloaded", timeout=10000)
+                                wait_for_page_load()
+                            except:
+                                # If navigation back fails, continue with current page
+                                pass
                     
-                    # Handle buttons and other clickable elements
-                    elif elem_type in ['button', 'div']:
+                    # Handle buttons and other clickable elements - ALWAYS click and record
+                    elif elem_type in ['button', 'div', 'select', 'checkbox']:
                         current_url = page.url
                         
                         try:
                             # Scroll element into view
                             element.scroll_into_view_if_needed()
-                            time.sleep(0.3)
+                            time.sleep(0.2)  # Reduced wait time
                             
-                            # Click the element
-                            element.click(timeout=5000)
-                            wait_for_page_load(timeout=8000)
+                            # Handle different element types
+                            if elem_type == 'select':
+                                # For select dropdowns, try to select first option
+                                try:
+                                    options = element.query_selector_all("option")
+                                    if options and len(options) > 1:
+                                        element.select_option(value=options[1].get_attribute("value"))
+                                    else:
+                                        element.click(timeout=5000)
+                                except:
+                                    element.click(timeout=5000)
+                            elif elem_type == 'checkbox':
+                                # For checkboxes, toggle them
+                                element.click(timeout=5000)
+                            else:
+                                # Click the element - always record the interaction
+                                element.click(timeout=5000)
+                            
+                            wait_for_page_load(timeout=6000)  # Reduced timeout
                             
                             new_url = page.url
                             normalized_new = normalize_url(new_url)
                             
-                            # Only count if URL changed or significant interaction
-                            if new_url != current_url or normalized_new not in visited:
-                                trans_screenshot = f"screenshots/run_{run_id}_trans_{len(transitions)}.png"
-                                try:
-                                    page.screenshot(path=trans_screenshot, full_page=True)
-                                except:
-                                    trans_screenshot = None
-                                
-                                transitions.append({
-                                    "from": current_url,
-                                    "clicked": label,
-                                    "to": new_url,
-                                    "screenshot": trans_screenshot,
-                                    "error": None
-                                })
-                                
-                                # Add to queue if new page
-                                if normalized_new not in visited and is_same_domain(new_url) and new_url != current_url:
-                                    url_queue.append((new_url, depth + 1))
-                                    click_count += 1
+                            # ALWAYS record the interaction, even if URL didn't change
+                            trans_screenshot = f"screenshots/run_{run_id}_trans_{len(transitions)}.png"
+                            try:
+                                page.screenshot(path=trans_screenshot, full_page=True)
+                            except:
+                                trans_screenshot = None
+                            
+                            transition_data = {
+                                "from": current_url,
+                                "clicked": label,
+                                "to": new_url,
+                                "screenshot": trans_screenshot,
+                                "error": None
+                            }
+                            transitions.append(transition_data)
+                            page_transitions.append(transition_data)
+                            
+                            # Add to queue if new page discovered
+                            if normalized_new not in visited and is_same_domain(new_url) and new_url != current_url:
+                                url_queue.append((new_url, depth + 1))
+                            
+                            click_count += 1
+                            
+                            # Small delay before next click
+                            time.sleep(0.2)
+                            
                         except Exception as e:
                             error_msg = str(e)[:200]
-                            transitions.append({
+                            # Still record the failed attempt - ALWAYS record
+                            transition_data = {
                                 "from": current_url,
                                 "clicked": label,
                                 "to": current_url,
                                 "screenshot": None,
                                 "error": error_msg
-                            })
+                            }
+                            transitions.append(transition_data)
+                            page_transitions.append(transition_data)
+                            click_count += 1  # Count failed attempts too
                             continue
                 
                 except Exception as e:
                     error_msg = str(e)[:200]
                     print(f"    Error interacting with element: {error_msg[:50]}")
+                    # Still record the error as a transition
+                    try:
+                        current_url = page.url
+                        transition_data = {
+                            "from": current_url,
+                            "clicked": label if 'label' in locals() else "Unknown",
+                            "to": current_url,
+                            "screenshot": None,
+                            "error": error_msg
+                        }
+                        transitions.append(transition_data)
+                        page_transitions.append(transition_data)
+                        click_count += 1
+                    except:
+                        pass
                     continue
             
+            # Update log with click count for this page
+            log_entry["click_count"] = click_count
+            log_entry["transitions_count"] = len(page_transitions)
+            
+            print(f"    ✓ Page complete: {click_count} clicks, {len(page_transitions)} transitions recorded")
             return True
             
         except Exception as e:
@@ -332,7 +474,7 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
     
     # Process queue - continue until queue is empty or no new pages found
     consecutive_no_new = 0
-    max_consecutive_no_new = 5  # Stop if no new pages found after 5 attempts
+    max_consecutive_no_new = 10  # Increased: Stop if no new pages found after 10 attempts
     
     while url_queue:
         # Check if we should stop (max_pages limit)
@@ -342,27 +484,28 @@ def crawl_app(page, run_id, start_url=None, depth_limit=10, max_pages=None):
         
         url, depth = url_queue.popleft()
         pages_before = len(visited)
+        interactions_before = len(transitions)
         
         if visit_url(url, depth):
             # Small delay between pages
-            time.sleep(0.5)
+            time.sleep(0.3)  # Reduced delay
             
-            # Reset counter if we found a new page
-            if len(visited) > pages_before:
+            # Reset counter if we found a new page or new interactions
+            if len(visited) > pages_before or len(transitions) > interactions_before:
                 consecutive_no_new = 0
             else:
                 consecutive_no_new += 1
         else:
             consecutive_no_new += 1
         
-        # Stop if we haven't found new pages in a while
+        # Stop if we haven't found new pages in a while AND queue is empty
         if consecutive_no_new >= max_consecutive_no_new and not url_queue:
             print(f"  No new pages found after {max_consecutive_no_new} attempts, stopping crawl")
             break
         
         # Safety check: if queue is getting too large, we might be in a loop
-        if len(url_queue) > 1000:
-            print(f"  ⚠ Queue size exceeded 1000, stopping to prevent infinite loop")
+        if len(url_queue) > 2000:  # Increased limit
+            print(f"  ⚠ Queue size exceeded 2000, stopping to prevent infinite loop")
             break
     
     print(f"\n✓ Crawl summary: {len(visited)} pages, {len(transitions)} interactions")

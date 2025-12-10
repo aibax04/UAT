@@ -127,6 +127,35 @@ def get_test_report(run_id):
     
     screenshots = [row[0] for row in cursor.fetchall()]
     
+    # Get crawl data with click counts per page
+    cursor.execute("""
+        SELECT url, buttons, screenshot_path, id
+        FROM crawl_logs 
+        WHERE run_id = ?
+        ORDER BY id
+    """, (run_data.get('run_db_id'),))
+    
+    crawl_logs = cursor.fetchall()
+    
+    # Get transitions count per page
+    pages_data = []
+    for log in crawl_logs:
+        page_url = log[0]
+        # Count transitions from this page
+        cursor.execute("""
+            SELECT COUNT(*) FROM transitions 
+            WHERE run_id = ? AND from_url = ?
+        """, (run_data.get('run_db_id'), page_url))
+        transitions_count = cursor.fetchone()[0]
+        
+        pages_data.append({
+            'url': page_url,
+            'buttons': json.loads(log[1]) if log[1] else [],
+            'screenshot': log[2],
+            'transitions_count': transitions_count,
+            'click_count': transitions_count  # Use transitions as click count
+        })
+    
     conn.close()
     
     return jsonify({
@@ -138,7 +167,8 @@ def get_test_report(run_id):
         'total_clicks': test_data[1] if test_data else 0,
         'started_at': test_data[2] if test_data else None,
         'finished_at': test_data[3] if test_data else None,
-        'screenshots': screenshots[:10]  
+        'screenshots': screenshots[:10],
+        'pages_data': pages_data  # Add pages data with click counts
     })
 
 @app.route('/api/screenshot/<path:filename>', methods=['GET'])
