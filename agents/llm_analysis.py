@@ -112,13 +112,22 @@ Transition {i+1}:
 - Status: {'ERROR' if trans.get('error') else 'Success'}
 """)
     
+    # Calculate base metrics for scoring
+    total_pages = len(crawl_data)
+    total_interactions = len(transitions)
+    error_count = len(errors)
+    success_rate = ((total_interactions - error_count) / total_interactions * 100) if total_interactions > 0 else 100
+    avg_elements_per_page = sum(len(log.get('buttons', [])) for log in crawl_data) / total_pages if total_pages > 0 else 0
+    
     prompt = f"""
-You are an expert UX/QA analyst conducting a comprehensive website audit.
+You are an expert UX/QA analyst conducting a comprehensive website audit. Provide a fair and realistic assessment based on the actual crawled data.
 
 ## CRAWL SUMMARY
-Total Pages Crawled: {len(crawl_data)}
-Total Interactions Tested: {len(transitions)}
-Errors Encountered: {len(errors)}
+Total Pages Crawled: {total_pages}
+Total Interactions Tested: {total_interactions}
+Errors Encountered: {error_count}
+Success Rate: {success_rate:.1f}%
+Average Interactive Elements per Page: {avg_elements_per_page:.1f}
 
 ## PAGES ANALYZED
 {''.join(crawl_summary)}
@@ -131,16 +140,73 @@ Errors Encountered: {len(errors)}
 
 ---
 
+## SCORING INSTRUCTIONS
+
 Please provide a detailed UX/QA analysis report covering:
 
-1. Navigation and structure
-2. Interactive elements
-3. Accessibility issues
-4. UX patterns and design
-5. Technical issues
-6. Recommendations
-7. UX score
-8. UI score
+1. **Navigation and Structure** - How easy is it to navigate? Are pages well-organized?
+2. **Interactive Elements** - Are buttons, links, and forms working properly?
+3. **User Experience** - Is the flow logical and intuitive?
+4. **Visual Design** - Is the UI clean and professional?
+5. **Technical Issues** - Any broken links, errors, or functionality problems?
+6. **Recommendations** - Specific, actionable improvements
+
+## SCORING CRITERIA (Be Fair and Realistic)
+
+Calculate the **UI/UX Score** (out of 10) based on these factors:
+
+**Base Score Calculation:**
+- **Pages Found (0-2 points)**: 
+  - 2 points: 10+ pages discovered
+  - 1.5 points: 5-9 pages
+  - 1 point: 2-4 pages
+  - 0.5 points: 1 page
+- **Interactivity (0-2 points)**:
+  - 2 points: 20+ successful interactions
+  - 1.5 points: 10-19 interactions
+  - 1 point: 5-9 interactions
+  - 0.5 points: 1-4 interactions
+- **Error Rate (0-2 points)**:
+  - 2 points: 0-10% errors (excellent)
+  - 1.5 points: 11-25% errors (good)
+  - 1 point: 26-50% errors (fair)
+  - 0.5 points: 51-75% errors (poor)
+  - 0 points: 76%+ errors (very poor)
+- **Element Discovery (0-2 points)**:
+  - 2 points: 5+ elements per page average
+  - 1.5 points: 3-4 elements per page
+  - 1 point: 2 elements per page
+  - 0.5 points: 1 element per page
+- **Navigation Quality (0-2 points)**:
+  - 2 points: Clear navigation, logical flow
+  - 1.5 points: Mostly clear navigation
+  - 1 point: Some navigation issues
+  - 0.5 points: Poor navigation structure
+
+**IMPORTANT SCORING RULES:**
+- Start with the base calculation above
+- Add 0.5-1 point if the site has good UX patterns (clear CTAs, good layout)
+- Subtract 0.5-1 point if there are major UX issues (confusing navigation, broken flows)
+- **Final score should be realistic**: Most functional websites should score 6-8/10
+- **Be generous**: If the site works reasonably well, don't penalize heavily for minor issues
+- **Consider the data available**: If we only crawled a few pages, don't assume the whole site is bad
+
+**Output Format:**
+At the end of your report, include:
+```
+## FINAL SCORES
+
+**UI/UX Score: X.X/10**
+
+Breakdown:
+- Pages Found: X.X/2
+- Interactivity: X.X/2
+- Error Rate: X.X/2
+- Element Discovery: X.X/2
+- Navigation Quality: X.X/2
+```
+
+Make sure to provide the score in the format: "UI/UX Score: X.X/10" where X.X is a number between 0 and 10.
 """
 
     enabled_models = [m for m in FREE_MODELS if m["enabled"]]
