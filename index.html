@@ -59,49 +59,526 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px 20px;
+            padding: 0;
             transition: transform 0.5s ease-in-out;
+            overflow-x: hidden;
         }
 
         .landing-page.slide-up {
             transform: translateY(-100vh);
         }
 
-        .landing-page h1 {
-            font-size: 4em;
-            font-weight: bold;
-            margin-bottom: 20px;
-            letter-spacing: 5px;
-            text-transform: uppercase;
+        /* Hero Section */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 80px 20px 60px;
+            position: relative;
         }
 
-        .landing-page p {
-            font-size: 1.2em;
-            margin-bottom: 40px;
-            opacity: 0.8;
-            max-width: 600px;
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-section h1 {
+            font-size: 5.5em;
+            font-weight: 300;
+            margin-bottom: 30px;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-section .tagline {
+            font-size: 1.4em;
+            margin-bottom: 60px;
+            opacity: 0.7;
+            max-width: 700px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s ease-out 0.2s both;
         }
 
         .start-btn {
             background: #ffffff;
             color: #000000;
-            padding: 18px 50px;
+            padding: 20px 60px;
             border: 2px solid #ffffff;
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            position: relative;
+            z-index: 1;
+            animation: fadeInUp 1s ease-out 0.4s both;
         }
 
         .start-btn:hover {
             background: #000000;
             color: #ffffff;
-            transform: scale(1.05);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 100px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 3em;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 80px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            opacity: 0.95;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 50px;
+            margin-bottom: 100px;
+        }
+
+        .feature-card {
+            padding: 40px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .feature-card:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 25px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4em;
+            font-weight: 400;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .feature-card p {
+            font-size: 1em;
+            line-height: 1.8;
+            opacity: 0.7;
+            font-weight: 300;
+        }
+
+        /* How It Works Section */
+        .how-it-works-section {
+            padding: 100px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .workflow-diagram {
+            perspective: 1500px;
+            margin: 80px 0;
+            height: 650px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: visible;
+            position: relative;
+        }
+
+        .diagram-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            height: 100%;
+            transform-style: preserve-3d;
+            animation: rotate3d 30s infinite linear;
+            transition: animation-play-state 0.3s ease;
+            margin: 0 auto;
+        }
+
+        .workflow-diagram:hover .diagram-container {
+            animation-play-state: paused;
+        }
+
+        @keyframes rotate3d {
+            0%, 100% { transform: rotateY(0deg) rotateX(6deg) translateZ(0px); }
+            25% { transform: rotateY(6deg) rotateX(0deg) translateZ(15px); }
+            50% { transform: rotateY(0deg) rotateX(-6deg) translateZ(0px); }
+            75% { transform: rotateY(-6deg) rotateX(0deg) translateZ(15px); }
+        }
+
+        /* Pause animation when hovering over any step */
+        .workflow-diagram:hover .diagram-container {
+            animation-play-state: paused;
+        }
+
+        /* Enhanced diamond pattern with better depth */
+        .workflow-step::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            z-index: -1;
+        }
+
+        .workflow-step:hover::before {
+            opacity: 1;
+        }
+
+        .workflow-step {
+            position: absolute;
+            width: 220px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            text-align: center;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.1);
+            z-index: 2;
+            cursor: pointer;
+        }
+
+        .workflow-step:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.7);
+            transform: scale(1.15) translateZ(250px) rotateY(0deg) rotateX(0deg) !important;
+            box-shadow: 0 30px 80px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2);
+            z-index: 100 !important;
+        }
+
+        /* Ensure hovered element is always on top */
+        .workflow-step:hover ~ .workflow-step {
+            z-index: 1;
+        }
+
+        /* Enhanced hover effects for step content */
+        .workflow-step:hover .step-number {
+            transform: scale(1.1);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .workflow-step:hover .step-title {
+            transform: translateY(-2px);
+            letter-spacing: 3px;
+        }
+
+        .workflow-step:hover .step-description {
+            opacity: 1;
+        }
+
+        /* Enhanced Diamond Pattern - Perfect 4-point layout */
+        .workflow-step.step-1 {
+            left: 15%;
+            top: 38%;
+            transform: translateZ(40px) rotateY(-4deg) rotateX(3deg);
+        }
+
+        .workflow-step.step-2 {
+            left: 40%;
+            top: 8%;
+            transform: translateZ(120px) rotateY(4deg) rotateX(-3deg);
+        }
+
+        .workflow-step.step-3 {
+            left: 65%;
+            top: 38%;
+            transform: translateZ(200px) rotateY(-4deg) rotateX(3deg);
+        }
+
+        .workflow-step.step-4 {
+            left: 40%;
+            top: 70%;
+            transform: translateZ(160px) rotateY(4deg) rotateX(-3deg);
+        }
+
+        .step-number {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 12px;
+            opacity: 0.95;
+            color: rgba(255, 255, 255, 0.95);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: block;
+        }
+
+        .step-title {
+            font-size: 1em;
+            font-weight: 400;
+            margin-bottom: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.95);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: block;
+        }
+
+        .step-description {
+            font-size: 0.85em;
+            opacity: 0.8;
+            line-height: 1.6;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.85);
+            transition: opacity 0.6s ease;
+        }
+
+        .workflow-connector {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.15));
+            transform-origin: left center;
+            animation: pulse 2s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.4; }
+        }
+
+        .workflow-connector::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+        }
+
+        /* Enhanced Connectors aligned with diamond pattern */
+        .connector-1 {
+            left: 31%;
+            top: 45%;
+            width: 9%;
+            transform: rotate(10deg) translateZ(80px);
+        }
+
+        .connector-2 {
+            left: 55%;
+            top: 30%;
+            width: 10%;
+            transform: rotate(-10deg) translateZ(160px);
+        }
+
+        .connector-3 {
+            left: 55%;
+            top: 45%;
+            width: 9%;
+            transform: rotate(25deg) translateZ(180px);
+        }
+
+        /* Enhance connectors on step hover */
+        .workflow-step.step-1:hover ~ .connector-1,
+        .workflow-step.step-2:hover ~ .connector-2,
+        .workflow-step.step-3:hover ~ .connector-3 {
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
+            height: 3px;
+            transform: translateZ(200px);
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 20px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 30px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+        }
+
+        .cta-section p {
+            font-size: 1.2em;
+            opacity: 0.7;
+            margin-bottom: 50px;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Particle Animation Container */
+        .particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            perspective: 2000px;
+            transform-style: preserve-3d;
+        }
+
+        .particle-container.active {
+            opacity: 1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 255, 0.4);
+            transform-style: preserve-3d;
+        }
+
+        /* Particle Animation - Flow to Form with 3D effect */
+        @keyframes particleFlow {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1) rotateY(0deg);
+                opacity: 1;
+            }
+            30% {
+                opacity: 1;
+                transform: translate3d(calc(var(--flow-x) * 0.3), calc(var(--flow-y) * 0.3), calc(var(--flow-z) * 0.3)) scale(1.2) rotateY(180deg);
+            }
+            70% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate3d(var(--flow-x), var(--flow-y), var(--flow-z)) scale(0.2) rotateY(360deg);
+                opacity: 0;
+            }
+        }
+
+        .particle-flow {
+            animation: particleFlow 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 3em;
+                letter-spacing: 6px;
+            }
+
+            .hero-section .tagline {
+                font-size: 1.1em;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .workflow-diagram {
+                height: 800px;
+            }
+
+            .workflow-step {
+                position: relative !important;
+                left: auto !important;
+                top: auto !important;
+                margin: 20px auto;
+                transform: none !important;
+            }
+
+            .workflow-connector {
+                display: none;
+            }
+
+            .diagram-container {
+                animation: none;
+                transform: none !important;
+            }
+
+            .section-title {
+                font-size: 2em;
+            }
         }
 
         /* Form Section */
@@ -518,6 +995,17 @@
             margin-top: 40px;
         }
 
+        .dashboard .summary-block {
+            grid-column: 1 / -1 !important; /* Force full width across all columns */
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .full-width {
+            grid-column: 1 / -1 !important;
+        }
+
         .summary-block {
             margin-bottom: 30px;
             padding: 30px;
@@ -546,6 +1034,10 @@
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
+            white-space: pre-line; /* Preserve line breaks for 5-6 lines */
+            min-height: 140px; /* Ensure enough space for 5-6 lines */
+            max-height: 180px; /* Limit to prevent too much space */
+            overflow: visible; /* Show all content */
         }
 
         .summary-text::first-line {
@@ -885,10 +1377,92 @@
 <body>
     <!-- Landing Page -->
     <div class="landing-page" id="landingPage">
-        <h1>CRAWL AI</h1>
-        <p>Automated website analysis and testing platform</p>
-        <button class="start-btn" id="startCrawlingBtn">Start Crawling</button>
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1>CRAWL AI</h1>
+            <p class="tagline">Intelligent Web Analysis & UX Research Platform</p>
+            <button class="start-btn" id="startCrawlingBtn">Start Analysis</button>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section">
+            <h2 class="section-title">Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">01</div>
+                    <h3>Comprehensive Crawling</h3>
+                    <p>Automatically discovers and crawls all pages, buttons, links, and interactive elements across your entire website with intelligent loop detection and navigation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">02</div>
+                    <h3>AI-Powered Analysis</h3>
+                    <p>Advanced AI models analyze your website's UX/UI using human psychology principles, cognitive load theory, and emotional design patterns to provide actionable insights.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">03</div>
+                    <h3>Interactive Dashboard</h3>
+                    <p>Visualize your website's performance with animated charts, metrics, user journey predictions, and comprehensive analytics in a beautiful black-and-white interface.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">04</div>
+                    <h3>Screenshot Gallery</h3>
+                    <p>Automatically captures screenshots of every page visited, providing visual evidence of your website's structure and design for detailed analysis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">05</div>
+                    <h3>Human-Centered Reports</h3>
+                    <p>Receive detailed UX research reports written from a senior UX researcher's perspective, focusing on emotional impact, accessibility, and user experience.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">06</div>
+                    <h3>PDF Export</h3>
+                    <p>Download comprehensive PDF reports and screenshot galleries for offline review, presentations, and documentation of your website analysis.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="how-it-works-section">
+            <h2 class="section-title">How It Works</h2>
+            <div class="workflow-diagram">
+                <div class="diagram-container">
+                    <div class="workflow-step step-1">
+                        <div class="step-number">1</div>
+                        <div class="step-title">Input URL</div>
+                        <div class="step-description">Enter your website URL and optional login credentials to begin the analysis process.</div>
+                    </div>
+                    <div class="workflow-connector connector-1"></div>
+                    <div class="workflow-step step-2">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Intelligent Crawling</div>
+                        <div class="step-description">Our advanced crawler navigates through all pages, discovers interactive elements, and captures screenshots automatically.</div>
+                    </div>
+                    <div class="workflow-connector connector-2"></div>
+                    <div class="workflow-step step-3">
+                        <div class="step-number">3</div>
+                        <div class="step-title">AI Analysis</div>
+                        <div class="step-description">Powerful AI models analyze the collected data using UX research principles to generate comprehensive insights.</div>
+                    </div>
+                    <div class="workflow-connector connector-3"></div>
+                    <div class="workflow-step step-4">
+                        <div class="step-number">4</div>
+                        <div class="step-title">Visual Dashboard</div>
+                        <div class="step-description">View your results in an interactive dashboard with charts, metrics, and detailed recommendations.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="cta-section">
+            <h2>Ready to Analyze Your Website?</h2>
+            <p>Discover insights about your website's user experience, identify pain points, and get actionable recommendations from our AI-powered analysis platform.</p>
+            <button class="start-btn" onclick="document.getElementById('startCrawlingBtn').click()">Start Your Analysis</button>
+        </div>
     </div>
+
+    <!-- Particle Animation Container -->
+    <div class="particle-container" id="particleContainer"></div>
 
     <!-- Form Section -->
     <div class="form-section" id="formSection">
@@ -1011,13 +1585,94 @@
         let startTime = null;
         let reportData = null;
 
-        // Landing page to form transition
+        // Particle Animation Function
+        function createParticleAnimation(buttonElement) {
+            const particleContainer = document.getElementById('particleContainer');
+            const buttonRect = buttonElement.getBoundingClientRect();
+            const formSection = document.getElementById('formSection');
+            
+            // Calculate center of button
+            const startX = buttonRect.left + buttonRect.width / 2;
+            const startY = buttonRect.top + buttonRect.height / 2;
+            
+            // Calculate center of form section
+            const endX = window.innerWidth / 2;
+            const endY = window.innerHeight / 2;
+            
+            // Activate particle container
+            particleContainer.classList.add('active');
+            particleContainer.innerHTML = '';
+            
+            // Create 200 tiny particles for more density
+            const particleCount = 200;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random starting position around button (circular burst)
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const radius = 15 + Math.random() * 40;
+                const initialX = startX + Math.cos(angle) * radius;
+                const initialY = startY + Math.sin(angle) * radius;
+                
+                particle.style.left = initialX + 'px';
+                particle.style.top = initialY + 'px';
+                
+                // Calculate flow direction to form section center
+                const flowX = endX - initialX;
+                const flowY = endY - initialY;
+                // Add 3D depth with random Z variation
+                const flowZ = (Math.random() - 0.5) * 300; // More depth variation
+                
+                // Set CSS variables for animation
+                particle.style.setProperty('--flow-x', flowX + 'px');
+                particle.style.setProperty('--flow-y', flowY + 'px');
+                particle.style.setProperty('--flow-z', flowZ + 'px');
+                
+                // Random size variation (tiny dots)
+                const size = 2 + Math.random() * 2.5;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Random opacity for depth effect
+                const opacity = 0.7 + Math.random() * 0.3;
+                particle.style.opacity = opacity;
+                
+                // Random delay for staggered effect (creates wave)
+                const delay = Math.random() * 0.4;
+                particle.style.animationDelay = delay + 's';
+                
+                // Add particle to container
+                particleContainer.appendChild(particle);
+                
+                // Add flow animation immediately
+                particle.classList.add('particle-flow');
+            }
+            
+            // Clean up after animation
+            setTimeout(() => {
+                particleContainer.classList.remove('active');
+                particleContainer.innerHTML = '';
+            }, 2500);
+        }
+
+        // Landing page to form transition with particle animation
         document.getElementById('startCrawlingBtn').addEventListener('click', () => {
-            document.getElementById('landingPage').classList.add('slide-up');
+            const button = document.getElementById('startCrawlingBtn');
+            
+            // Create particle animation
+            createParticleAnimation(button);
+            
+            // Delay the page transition slightly to see particles
+            setTimeout(() => {
+                document.getElementById('landingPage').classList.add('slide-up');
+            }, 100);
+            
             setTimeout(() => {
                 document.getElementById('formSection').classList.add('active');
                 document.getElementById('backBtn').style.display = 'block';
-            }, 300);
+            }, 600);
         });
 
         // Back button
@@ -1134,26 +1789,27 @@
         }
 
         function extractSummary(reportText) {
-            if (!reportText) return null;
+            if (!reportText || reportText.length < 50) return null;
             
-            // Try to extract "Human Experience Summary" section (multiple formats)
-            // Format 1: **Human Experience Summary:** followed by text (can span multiple lines)
-            let summaryMatch = reportText.match(/\*\*Human Experience Summary:\*\*\s*([^\n]+(?:\n[^\n]+){0,4})/i);
+            // Try to extract "Human Experience Summary" section (5-6 lines)
+            // Format 1: **Human Experience Summary:** followed by text (5-6 lines)
+            let summaryMatch = reportText.match(/\*\*Human Experience Summary:\*\*\s*([^\n]+(?:\n[^\n]+){0,5})/i);
             if (summaryMatch) {
                 let summary = summaryMatch[1].trim();
                 // Clean up markdown formatting
                 summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
-                return summary;
+                if (summary.length > 30) return summary;
             }
             
             // Format 2: Human Experience Summary: (without bold, can be in brackets or after colon)
             summaryMatch = reportText.match(/Human Experience Summary:?\s*\[([^\]]+)\]/i);
             if (summaryMatch) {
-                return summaryMatch[1].trim();
+                let summary = summaryMatch[1].trim();
+                if (summary.length > 30) return summary;
             }
             
-            // Format 3: Human Experience Summary: followed by text (no brackets)
-            summaryMatch = reportText.match(/Human Experience Summary:?\s*([^\n]+(?:\n[^\n]+){0,4})/i);
+            // Format 3: Human Experience Summary: followed by text (no brackets, 5-6 lines)
+            summaryMatch = reportText.match(/Human Experience Summary:?\s*([^\n]+(?:\n[^\n]+){0,5})/i);
             if (summaryMatch) {
                 let summary = summaryMatch[1].trim();
                 // Remove markdown formatting
@@ -1162,31 +1818,66 @@
                 if (summary.toLowerCase().includes('human experience summary')) {
                     summary = summary.replace(/human experience summary:?\s*/i, '').trim();
                 }
-                if (summary.length > 20) { // Only return if we have substantial content
+                if (summary.length > 30) {
                     return summary;
                 }
             }
             
-            // Format 4: Try to find summary after "FINAL SCORES" section
-            const finalScoresMatch = reportText.match(/FINAL SCORES[\s\S]*?Human Experience Summary:?\s*\[?([^\n\]]+(?:\n[^\n\]]+){0,4})/i);
+            // Format 4: Try to find summary after "FINAL SCORES" section (5-6 lines)
+            const finalScoresMatch = reportText.match(/FINAL SCORES[\s\S]*?Human Experience Summary:?\s*\[?([^\n\]]+(?:\n[^\n\]]+){0,5})/i);
             if (finalScoresMatch) {
                 let summary = finalScoresMatch[1].trim();
                 summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
-                if (summary.length > 20) {
+                if (summary.length > 30) {
                     return summary;
                 }
             }
             
-            // Fallback: Extract first 3-4 sentences from "First Impressions" section
-            const firstImpressionsMatch = reportText.match(/First Impressions[^\n]*\n[^\n]*\n([^\n]+(?:\n[^\n]+){0,3})/i);
-            if (firstImpressionsMatch) {
-                return firstImpressionsMatch[1].trim();
+            // Fallback 1: Extract from "A first-time visitor will likely feel" pattern (demo format) - get 5-6 lines
+            const firstTimeMatch = reportText.match(/A first-time visitor will likely feel[^\n]+[^\n]+[^\n]+[^\n]+[^\n]+[^\n]+/i);
+            if (firstTimeMatch) {
+                let summary = firstTimeMatch[0].trim();
+                // Clean up
+                summary = summary.replace(/A first-time visitor will likely feel:?\s*/i, '').trim();
+                if (summary.length > 40) {
+                    return summary.substring(0, 600); // Allow for 5-6 lines
+                }
             }
             
-            // Last fallback: Extract from "A first-time visitor will likely feel" pattern
-            const firstTimeMatch = reportText.match(/A first-time visitor will likely feel[^\n]+[^\n]+[^\n]+[^\n]+/i);
-            if (firstTimeMatch) {
-                return firstTimeMatch[0].trim().substring(0, 300); // Limit length
+            // Fallback 2: Extract from "First Impressions" section - get 5-6 lines
+            const firstImpressionsMatch = reportText.match(/First Impressions[^\n]*\n[^\n]*\n([^\n]+(?:\n[^\n]+){0,5})/i);
+            if (firstImpressionsMatch) {
+                let summary = firstImpressionsMatch[1].trim();
+                if (summary.length > 40) return summary;
+            }
+            
+            // Fallback 3: Extract first meaningful paragraph from report (5-6 lines worth)
+            const paragraphs = reportText.split('\n\n').filter(p => p.trim().length > 50);
+            if (paragraphs.length > 0) {
+                // Find first paragraph that looks like a summary
+                for (let para of paragraphs) {
+                    if (para.length > 100 && para.length < 800 && 
+                        !para.toLowerCase().includes('score') && 
+                        !para.toLowerCase().includes('breakdown') &&
+                        !para.toLowerCase().includes('adjustments applied')) {
+                        // Get first 5-6 lines
+                        const lines = para.split('\n').filter(l => l.trim().length > 10);
+                        if (lines.length >= 3) {
+                            return lines.slice(0, 6).join('\n').trim();
+                        }
+                        return para.trim().substring(0, 500);
+                    }
+                }
+            }
+            
+            // Fallback 4: Extract from "Why:" section in First Impressions (usually has good summary content)
+            const whyMatch = reportText.match(/Why:[\s\S]*?([^\n]+(?:\n[^\n]+){0,5})/i);
+            if (whyMatch) {
+                let summary = whyMatch[1].trim();
+                summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
+                if (summary.length > 40) {
+                    return summary.substring(0, 600);
+                }
             }
             
             return null;
@@ -1204,26 +1895,133 @@
 
             // Extract Human Experience Summary from report
             const summary = extractSummary(data.report || '');
+            console.log('Summary extracted:', summary ? summary.substring(0, 100) + '...' : 'null');
+            console.log('Report length:', (data.report || '').length);
             
             // UX Experience Summary (displayed prominently at top)
-            // Always show summary block, even if extraction fails (for debugging)
+            // Always show summary block
             const summaryBlock = document.createElement('div');
             summaryBlock.className = 'dashboard-block full-width summary-block';
-            if (summary) {
+            summaryBlock.style.display = 'block';
+            summaryBlock.style.visibility = 'visible';
+            summaryBlock.style.opacity = '1';
+            
+            // Always show summary - extract or use fallback (5-6 lines)
+            let displaySummary = summary;
+            
+            if (!displaySummary || displaySummary.length < 30) {
+                // Try to extract a fallback summary from the report (5-6 lines)
+                const reportText = data.report || '';
+                
+                // Try to get content from First Impressions section (5-6 lines)
+                const firstImpMatch = reportText.match(/First Impressions[^\n]*\n[^\n]*\n([^\n]+(?:\n[^\n]+){0,5})/i);
+                if (firstImpMatch) {
+                    displaySummary = firstImpMatch[1].trim();
+                    // Limit to 5-6 lines
+                    const lines = displaySummary.split('\n').filter(l => l.trim().length > 10);
+                    if (lines.length > 6) {
+                        displaySummary = lines.slice(0, 6).join('\n');
+                    }
+                } else if (reportText.length > 100) {
+                    // Get first meaningful paragraph (5-6 lines worth)
+                    const paragraphs = reportText.split('\n\n').filter(p => p.trim().length > 50);
+                    const firstPara = paragraphs.find(p => 
+                        p.trim().length > 100 && 
+                        p.trim().length < 800 && 
+                        !p.toLowerCase().includes('score') &&
+                        !p.toLowerCase().includes('breakdown')
+                    );
+                    if (firstPara) {
+                        const lines = firstPara.split('\n').filter(l => l.trim().length > 10);
+                        if (lines.length >= 3) {
+                            displaySummary = lines.slice(0, 6).join('\n').trim();
+                        } else {
+                            displaySummary = firstPara.trim().substring(0, 500);
+                        }
+                    } else {
+                        // Last resort: first 400 chars formatted as lines
+                        const text = reportText.substring(0, 400).replace(/\n/g, ' ').trim();
+                        displaySummary = text;
+                    }
+                }
+            }
+            
+            // Format summary to ensure it's 5-6 lines if it's too short
+            if (displaySummary && displaySummary.length > 30) {
+                // Split into lines and ensure we have meaningful content
+                const lines = displaySummary.split('\n').filter(l => l.trim().length > 15);
+                if (lines.length < 3 && displaySummary.length > 200) {
+                    // If it's one long line, try to break it into 5-6 lines
+                    const words = displaySummary.split(' ');
+                    const wordsPerLine = Math.ceil(words.length / 5);
+                    const formattedLines = [];
+                    for (let i = 0; i < words.length; i += wordsPerLine) {
+                        formattedLines.push(words.slice(i, i + wordsPerLine).join(' '));
+                    }
+                    displaySummary = formattedLines.slice(0, 6).join('\n');
+                } else if (lines.length > 6) {
+                    // Limit to 6 lines max
+                    displaySummary = lines.slice(0, 6).join('\n');
+                } else if (lines.length >= 3) {
+                    // Use the lines as-is if we have 3-6 lines
+                    displaySummary = lines.join('\n');
+                }
+                
                 summaryBlock.innerHTML = `
                     <h3>UX Experience Summary</h3>
-                    <div class="summary-text">${summary}</div>
+                    <div class="summary-text">${displaySummary}</div>
                 `;
             } else {
-                // Show debug info if summary not found
+                // Show placeholder if no summary available
                 summaryBlock.innerHTML = `
                     <h3>UX Experience Summary</h3>
-                    <div class="summary-text" style="opacity: 0.6; font-style: italic;">
-                        Summary extraction in progress... (Report length: ${(data.report || '').length} chars)
-                    </div>
+                    <div class="summary-text">Analysis complete. Review the detailed report below for comprehensive UX insights and recommendations.</div>
                 `;
             }
-            dashboard.appendChild(summaryBlock);
+            
+            // Force append at the beginning and ensure visibility
+            if (dashboard.firstChild) {
+                dashboard.insertBefore(summaryBlock, dashboard.firstChild);
+            } else {
+                dashboard.appendChild(summaryBlock);
+            }
+            
+            // Force visibility with inline styles (completely override any CSS)
+            summaryBlock.style.setProperty('display', 'block', 'important');
+            summaryBlock.style.setProperty('visibility', 'visible', 'important');
+            summaryBlock.style.setProperty('opacity', '1', 'important');
+            summaryBlock.style.setProperty('grid-column', '1 / -1', 'important');
+            summaryBlock.style.setProperty('width', '100%', 'important');
+            summaryBlock.style.setProperty('max-width', '100%', 'important');
+            summaryBlock.style.setProperty('margin-bottom', '30px', 'important');
+            summaryBlock.style.setProperty('padding', '30px', 'important');
+            summaryBlock.style.setProperty('background', 'rgba(255, 255, 255, 0.05)', 'important');
+            summaryBlock.style.setProperty('border-left', '4px solid rgba(255, 255, 255, 0.5)', 'important');
+            summaryBlock.style.setProperty('border-radius', '4px', 'important');
+            summaryBlock.style.setProperty('box-sizing', 'border-box', 'important');
+            
+            // Also ensure text is visible after a brief delay (to ensure DOM is ready)
+            setTimeout(() => {
+                const summaryText = summaryBlock.querySelector('.summary-text');
+                if (summaryText) {
+                    summaryText.style.setProperty('color', 'rgba(255, 255, 255, 0.95)', 'important');
+                    summaryText.style.setProperty('display', 'block', 'important');
+                    summaryText.style.setProperty('visibility', 'visible', 'important');
+                    summaryText.style.setProperty('opacity', '1', 'important');
+                }
+                
+                // Debug: Log summary block status
+                const computedStyle = window.getComputedStyle(summaryBlock);
+                console.log('Summary block visibility check:', {
+                    inDOM: document.body.contains(summaryBlock),
+                    display: computedStyle.display,
+                    visibility: computedStyle.visibility,
+                    opacity: computedStyle.opacity,
+                    height: summaryBlock.offsetHeight,
+                    width: summaryBlock.offsetWidth,
+                    gridColumn: computedStyle.gridColumn
+                });
+            }, 200);
 
             // UX Score Gauge
             const scoreBlock = document.createElement('div');
