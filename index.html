@@ -102,6 +102,24 @@
             animation: fadeInUp 1s ease-out;
         }
 
+        .hero-section h1.text-breaking {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .text-particle {
+            position: fixed;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 5.5em;
+            font-weight: 300;
+            letter-spacing: 12px;
+            pointer-events: none;
+            z-index: 10000;
+            transform-style: preserve-3d;
+            will-change: transform, opacity;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
         .hero-section .tagline {
             font-size: 1.4em;
             margin-bottom: 60px;
@@ -513,6 +531,17 @@
             border-radius: 50%;
             pointer-events: none;
             box-shadow: 0 0 8px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 255, 255, 0.4);
+            transform-style: preserve-3d;
+        }
+
+        .particle-large {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.9), 0 0 25px rgba(255, 255, 255, 0.6), 0 0 35px rgba(255, 255, 255, 0.3);
             transform-style: preserve-3d;
         }
 
@@ -1007,37 +1036,43 @@
         }
 
         .summary-block {
-            margin-bottom: 30px;
-            padding: 30px;
+            margin-bottom: 35px;
+            padding: 35px 40px;
             background: rgba(255, 255, 255, 0.05);
             border-left: 4px solid rgba(255, 255, 255, 0.5);
             border-radius: 4px;
             display: block !important;
             visibility: visible !important;
+            box-sizing: border-box;
+            width: 100%;
         }
 
         .summary-block h3 {
             color: #ffffff !important;
-            opacity: 0.9 !important;
-            font-size: 1.1em;
-            margin-bottom: 20px;
+            opacity: 0.95 !important;
+            font-size: 1.05em;
+            margin-bottom: 18px;
+            margin-top: 0;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .summary-text {
             color: rgba(255, 255, 255, 0.95) !important;
-            font-size: 1.05em;
-            line-height: 1.9;
-            margin-top: 15px;
+            font-size: 0.98em;
+            line-height: 1.75;
+            margin: 0;
+            padding: 0;
             font-weight: 300;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            white-space: pre-line; /* Preserve line breaks for 5-6 lines */
-            min-height: 140px; /* Ensure enough space for 5-6 lines */
-            max-height: 180px; /* Limit to prevent too much space */
-            overflow: visible; /* Show all content */
+            white-space: pre-line;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            text-align: left;
         }
 
         .summary-text::first-line {
@@ -1603,15 +1638,63 @@
             particleContainer.classList.add('active');
             particleContainer.innerHTML = '';
             
-            // Create 200 tiny particles for more density
-            const particleCount = 200;
+            // Create mix of large balls and tiny particles
+            const totalParticleCount = 200;
+            const largeBallCount = 30; // Number of larger balls
+            const tinyParticleCount = totalParticleCount - largeBallCount; // Rest are tiny
             
-            for (let i = 0; i < particleCount; i++) {
+            // Create large balls
+            for (let i = 0; i < largeBallCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle-large';
+                
+                // Random starting position around button (circular burst)
+                const angle = (Math.PI * 2 * i) / largeBallCount;
+                const radius = 20 + Math.random() * 50;
+                const initialX = startX + Math.cos(angle) * radius;
+                const initialY = startY + Math.sin(angle) * radius;
+                
+                particle.style.left = initialX + 'px';
+                particle.style.top = initialY + 'px';
+                
+                // Calculate flow direction to form section center
+                const flowX = endX - initialX;
+                const flowY = endY - initialY;
+                // Add 3D depth with random Z variation
+                const flowZ = (Math.random() - 0.5) * 300;
+                
+                // Set CSS variables for animation
+                particle.style.setProperty('--flow-x', flowX + 'px');
+                particle.style.setProperty('--flow-y', flowY + 'px');
+                particle.style.setProperty('--flow-z', flowZ + 'px');
+                
+                // Large ball size (8-12px)
+                const size = 8 + Math.random() * 4;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Random opacity for depth effect
+                const opacity = 0.8 + Math.random() * 0.2;
+                particle.style.opacity = opacity;
+                
+                // Random delay for staggered effect
+                const delay = Math.random() * 0.4;
+                particle.style.animationDelay = delay + 's';
+                
+                // Add particle to container
+                particleContainer.appendChild(particle);
+                
+                // Add flow animation immediately
+                particle.classList.add('particle-flow');
+            }
+            
+            // Create tiny particles
+            for (let i = 0; i < tinyParticleCount; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 
                 // Random starting position around button (circular burst)
-                const angle = (Math.PI * 2 * i) / particleCount;
+                const angle = (Math.PI * 2 * i) / tinyParticleCount;
                 const radius = 15 + Math.random() * 40;
                 const initialX = startX + Math.cos(angle) * radius;
                 const initialY = startY + Math.sin(angle) * radius;
@@ -1623,14 +1706,14 @@
                 const flowX = endX - initialX;
                 const flowY = endY - initialY;
                 // Add 3D depth with random Z variation
-                const flowZ = (Math.random() - 0.5) * 300; // More depth variation
+                const flowZ = (Math.random() - 0.5) * 300;
                 
                 // Set CSS variables for animation
                 particle.style.setProperty('--flow-x', flowX + 'px');
                 particle.style.setProperty('--flow-y', flowY + 'px');
                 particle.style.setProperty('--flow-z', flowZ + 'px');
                 
-                // Random size variation (tiny dots)
+                // Tiny particle size (2-4.5px) - same as before
                 const size = 2 + Math.random() * 2.5;
                 particle.style.width = size + 'px';
                 particle.style.height = size + 'px';
@@ -1657,22 +1740,110 @@
             }, 2500);
         }
 
-        // Landing page to form transition with particle animation
+        // Function to break text into particles and converge to center with blast effect
+        function breakTextIntoParticles(textElement, targetX, targetY) {
+            const text = textElement.textContent.trim();
+            const rect = textElement.getBoundingClientRect();
+            const startX = rect.left + rect.width / 2;
+            const startY = rect.top + rect.height / 2;
+            
+            // Hide original text
+            textElement.style.opacity = '0';
+            textElement.style.transition = 'opacity 0.2s ease';
+            
+            // Create particles for each character
+            const particles = [];
+            const chars = text.split('');
+            const totalWidth = rect.width;
+            const charSpacing = chars.length > 1 ? totalWidth / (chars.length - 1) : 0;
+            
+            chars.forEach((char, index) => {
+                if (char === ' ') return; // Skip spaces
+                
+                const particle = document.createElement('span');
+                particle.className = 'text-particle';
+                particle.textContent = char;
+                
+                // Calculate character position
+                const charX = rect.left + (index * charSpacing);
+                const charY = rect.top;
+                
+                particle.style.position = 'fixed';
+                particle.style.left = charX + 'px';
+                particle.style.top = charY + 'px';
+                particle.style.transformOrigin = 'center center';
+                particle.style.willChange = 'transform, opacity';
+                
+                // Calculate distance to target
+                const deltaX = targetX - charX;
+                const deltaY = targetY - charY;
+                
+                // Calculate blast direction (outward first)
+                const angle = Math.atan2(charY - startY, charX - startX);
+                const blastDistance = 50 + Math.random() * 30; // Random blast distance
+                const blastX = Math.cos(angle) * blastDistance;
+                const blastY = Math.sin(angle) * blastDistance;
+                
+                document.body.appendChild(particle);
+                particles.push(particle);
+                
+                // Phase 1: Blast outward (slower)
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        particle.style.transition = 'all 0.6s cubic-bezier(0.5, 0, 0.8, 1)';
+                        particle.style.transform = `translate3d(${blastX}px, ${blastY}px, 0) scale(1.2) rotate(${Math.random() * 360}deg)`;
+                        particle.style.opacity = '0.8';
+                    }, index * 15);
+                });
+                
+                // Phase 2: Converge to center (smooth)
+                setTimeout(() => {
+                    particle.style.transition = 'all 0.8s cubic-bezier(0.2, 0, 0.1, 1)';
+                    particle.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.15) rotate(0deg)`;
+                    particle.style.opacity = '0';
+                }, 600 + (index * 15));
+            });
+            
+            // Clean up particles
+            setTimeout(() => {
+                particles.forEach(p => {
+                    if (p.parentNode) {
+                        p.parentNode.removeChild(p);
+                    }
+                });
+            }, 2000);
+        }
+
+        // Landing page to form transition with text-to-particle animation
         document.getElementById('startCrawlingBtn').addEventListener('click', () => {
             const button = document.getElementById('startCrawlingBtn');
+            const buttonRect = button.getBoundingClientRect();
+            const targetX = buttonRect.left + buttonRect.width / 2;
+            const targetY = buttonRect.top + buttonRect.height / 2;
             
-            // Create particle animation
-            createParticleAnimation(button);
+            // Get the CRAWL AI text
+            const crawlAiText = document.querySelector('.hero-section h1');
             
-            // Delay the page transition slightly to see particles
+            // Break text into particles and converge to button
+            if (crawlAiText) {
+                breakTextIntoParticles(crawlAiText, targetX, targetY);
+            }
+            
+            // After text converges, create particle ball animation
+            // Start particle ball when text is converging (smooth transition)
+            setTimeout(() => {
+                createParticleAnimation(button);
+            }, 1000);
+            
+            // Delay the page transition to allow particles to form
             setTimeout(() => {
                 document.getElementById('landingPage').classList.add('slide-up');
-            }, 100);
+            }, 1400);
             
             setTimeout(() => {
                 document.getElementById('formSection').classList.add('active');
                 document.getElementById('backBtn').style.display = 'block';
-            }, 600);
+            }, 1900);
         });
 
         // Back button
@@ -1687,6 +1858,13 @@
                 setTimeout(() => {
                     document.getElementById('landingPage').classList.remove('slide-up');
                     document.getElementById('backBtn').style.display = 'none';
+                    
+                    // Restore CRAWL AI text visibility
+                    const crawlAiText = document.querySelector('.hero-section h1');
+                    if (crawlAiText) {
+                        crawlAiText.style.opacity = '1';
+                        crawlAiText.style.transition = 'opacity 0.5s ease';
+                    }
                 }, 300);
             }
         });
@@ -1993,8 +2171,8 @@
             summaryBlock.style.setProperty('grid-column', '1 / -1', 'important');
             summaryBlock.style.setProperty('width', '100%', 'important');
             summaryBlock.style.setProperty('max-width', '100%', 'important');
-            summaryBlock.style.setProperty('margin-bottom', '30px', 'important');
-            summaryBlock.style.setProperty('padding', '30px', 'important');
+            summaryBlock.style.setProperty('margin-bottom', '35px', 'important');
+            summaryBlock.style.setProperty('padding', '35px 40px', 'important');
             summaryBlock.style.setProperty('background', 'rgba(255, 255, 255, 0.05)', 'important');
             summaryBlock.style.setProperty('border-left', '4px solid rgba(255, 255, 255, 0.5)', 'important');
             summaryBlock.style.setProperty('border-radius', '4px', 'important');
@@ -2008,6 +2186,10 @@
                     summaryText.style.setProperty('display', 'block', 'important');
                     summaryText.style.setProperty('visibility', 'visible', 'important');
                     summaryText.style.setProperty('opacity', '1', 'important');
+                    summaryText.style.setProperty('margin', '0', 'important');
+                    summaryText.style.setProperty('padding', '0', 'important');
+                    summaryText.style.setProperty('line-height', '1.75', 'important');
+                    summaryText.style.setProperty('font-size', '0.98em', 'important');
                 }
                 
                 // Debug: Log summary block status
