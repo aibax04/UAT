@@ -518,6 +518,40 @@
             margin-top: 40px;
         }
 
+        .summary-block {
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .summary-block h3 {
+            color: #ffffff !important;
+            opacity: 0.9 !important;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .summary-text {
+            color: rgba(255, 255, 255, 0.95) !important;
+            font-size: 1.05em;
+            line-height: 1.9;
+            margin-top: 15px;
+            font-weight: 300;
+            letter-spacing: 0.3px;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .summary-text::first-line {
+            font-weight: 400;
+        }
+
         .dashboard-block {
             background: transparent;
             padding: 25px;
@@ -1099,6 +1133,65 @@
             return metrics;
         }
 
+        function extractSummary(reportText) {
+            if (!reportText) return null;
+            
+            // Try to extract "Human Experience Summary" section (multiple formats)
+            // Format 1: **Human Experience Summary:** followed by text (can span multiple lines)
+            let summaryMatch = reportText.match(/\*\*Human Experience Summary:\*\*\s*([^\n]+(?:\n[^\n]+){0,4})/i);
+            if (summaryMatch) {
+                let summary = summaryMatch[1].trim();
+                // Clean up markdown formatting
+                summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
+                return summary;
+            }
+            
+            // Format 2: Human Experience Summary: (without bold, can be in brackets or after colon)
+            summaryMatch = reportText.match(/Human Experience Summary:?\s*\[([^\]]+)\]/i);
+            if (summaryMatch) {
+                return summaryMatch[1].trim();
+            }
+            
+            // Format 3: Human Experience Summary: followed by text (no brackets)
+            summaryMatch = reportText.match(/Human Experience Summary:?\s*([^\n]+(?:\n[^\n]+){0,4})/i);
+            if (summaryMatch) {
+                let summary = summaryMatch[1].trim();
+                // Remove markdown formatting
+                summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
+                // Remove if it's just the label itself
+                if (summary.toLowerCase().includes('human experience summary')) {
+                    summary = summary.replace(/human experience summary:?\s*/i, '').trim();
+                }
+                if (summary.length > 20) { // Only return if we have substantial content
+                    return summary;
+                }
+            }
+            
+            // Format 4: Try to find summary after "FINAL SCORES" section
+            const finalScoresMatch = reportText.match(/FINAL SCORES[\s\S]*?Human Experience Summary:?\s*\[?([^\n\]]+(?:\n[^\n\]]+){0,4})/i);
+            if (finalScoresMatch) {
+                let summary = finalScoresMatch[1].trim();
+                summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
+                if (summary.length > 20) {
+                    return summary;
+                }
+            }
+            
+            // Fallback: Extract first 3-4 sentences from "First Impressions" section
+            const firstImpressionsMatch = reportText.match(/First Impressions[^\n]*\n[^\n]*\n([^\n]+(?:\n[^\n]+){0,3})/i);
+            if (firstImpressionsMatch) {
+                return firstImpressionsMatch[1].trim();
+            }
+            
+            // Last fallback: Extract from "A first-time visitor will likely feel" pattern
+            const firstTimeMatch = reportText.match(/A first-time visitor will likely feel[^\n]+[^\n]+[^\n]+[^\n]+/i);
+            if (firstTimeMatch) {
+                return firstTimeMatch[0].trim().substring(0, 300); // Limit length
+            }
+            
+            return null;
+        }
+
         function createDashboard(data) {
             const dashboard = document.getElementById('dashboard');
             dashboard.innerHTML = '';
@@ -1108,6 +1201,29 @@
             const totalClicks = data.total_clicks || 0;
             const duration = data.started_at && data.finished_at ? 
                 Math.floor((new Date(data.finished_at) - new Date(data.started_at)) / 1000) : 0;
+
+            // Extract Human Experience Summary from report
+            const summary = extractSummary(data.report || '');
+            
+            // UX Experience Summary (displayed prominently at top)
+            // Always show summary block, even if extraction fails (for debugging)
+            const summaryBlock = document.createElement('div');
+            summaryBlock.className = 'dashboard-block full-width summary-block';
+            if (summary) {
+                summaryBlock.innerHTML = `
+                    <h3>UX Experience Summary</h3>
+                    <div class="summary-text">${summary}</div>
+                `;
+            } else {
+                // Show debug info if summary not found
+                summaryBlock.innerHTML = `
+                    <h3>UX Experience Summary</h3>
+                    <div class="summary-text" style="opacity: 0.6; font-style: italic;">
+                        Summary extraction in progress... (Report length: ${(data.report || '').length} chars)
+                    </div>
+                `;
+            }
+            dashboard.appendChild(summaryBlock);
 
             // UX Score Gauge
             const scoreBlock = document.createElement('div');

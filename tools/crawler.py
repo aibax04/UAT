@@ -42,37 +42,55 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
         # Normalize to lowercase for comparison (but keep original for navigation)
         return f"{parsed.scheme}://{parsed.netloc}{path}".lower()
     
-    def wait_for_page_load(timeout=15000):
-        """Wait for page to be fully loaded"""
+    def wait_for_page_load(timeout=20000):
+        """Wait for page to be fully loaded with better JavaScript support"""
         try:
-            # Wait for network to be idle
+            # Wait for network to be idle (more time for JS-heavy sites)
             page.wait_for_load_state("networkidle", timeout=timeout)
         except:
             try:
                 # Fallback to domcontentloaded
-                page.wait_for_load_state("domcontentloaded", timeout=5000)
+                page.wait_for_load_state("domcontentloaded", timeout=8000)
             except:
                 pass
-        # Additional wait for dynamic content
-        time.sleep(0.5)
+        
+        # Wait for JavaScript to execute and render content
+        # This is crucial for SPAs and JS-heavy sites
+        try:
+            # Wait for common JS frameworks to be ready
+            page.wait_for_function("document.readyState === 'complete'", timeout=5000)
+        except:
+            pass
+        
+        # Additional wait for dynamic content and async operations
+        time.sleep(1.0)  # Increased wait for JS-heavy sites
+        
+        # Wait for any pending network requests
+        try:
+            page.wait_for_load_state("networkidle", timeout=5000)
+        except:
+            pass
         
         # Scroll page to trigger lazy-loaded content
         try:
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            time.sleep(0.3)
+            time.sleep(0.5)  # Wait for lazy-loaded content
             page.evaluate("window.scrollTo(0, 0)")
-            time.sleep(0.2)
+            time.sleep(0.3)
         except:
             pass
     
     def find_clickable_elements():
-        """Find all clickable elements on the page"""
+        """Find all clickable elements on the page - enhanced for JS-heavy sites"""
         elements = []
         seen_elements = set()  # Track by element handle to avoid duplicates
         
+        # Wait a moment for dynamically added links to appear
+        time.sleep(0.3)
+        
         # Find all links (including those without href but with onclick)
-        # More comprehensive link discovery
-        links = page.query_selector_all("a[href], a[onclick], a[data-href], a[data-url], a[data-link], a[data-navigate], a[data-route], a[data-page], nav a, footer a, header a, .nav a, .menu a, .sidebar a, main a, article a, section a, [role='link'], [role='menuitem']")
+        # More comprehensive link discovery for modern JS frameworks
+        links = page.query_selector_all("a[href], a[onclick], a[data-href], a[data-url], a[data-link], a[data-navigate], a[data-route], a[data-page], a[data-to], nav a, footer a, header a, .nav a, .menu a, .sidebar a, main a, article a, section a, [role='link'], [role='menuitem'], [role='navigation'] a, [class*='card'] a, [class*='item'] a, [class*='tile'] a")
         for link in links:
             try:
                 # Check visibility more leniently - include elements that might become visible
@@ -82,14 +100,17 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                     is_visible = True  # Assume visible if check fails
                 
                 if is_visible:
-                    # Get href from various attributes
+                    # Get href from various attributes (including JS framework attributes)
                     href = (link.get_attribute("href") or 
                            link.get_attribute("data-href") or
                            link.get_attribute("data-url") or
                            link.get_attribute("data-link") or
                            link.get_attribute("data-navigate") or
                            link.get_attribute("data-route") or
-                           link.get_attribute("data-page"))
+                           link.get_attribute("data-page") or
+                           link.get_attribute("data-to") or
+                           link.get_attribute("data-router-link") or
+                           link.get_attribute("routerlink"))
                     
                     # Also check onclick for URL patterns
                     if not href:
@@ -235,13 +256,19 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
             visited.add(normalized)
             print(f"  {'  ' * depth}Visiting [{depth}]: {url}")
             
-            # Navigate to URL with better error handling
+            # Navigate to URL with better error handling for JS-heavy sites
             try:
-                page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                # For SPAs, use networkidle to ensure JS has loaded
+                page.goto(url, wait_until="networkidle", timeout=30000)
                 wait_for_page_load()
-            except Exception as e:
-                print(f"    Navigation error: {str(e)[:100]}")
-                return False
+            except:
+                try:
+                    # Fallback to domcontentloaded if networkidle fails
+                    page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                    wait_for_page_load()
+                except Exception as e:
+                    print(f"    Navigation error: {str(e)[:100]}")
+                    return False
             
             # Take screenshot
             screenshot_path = f"screenshots/run_{run_id}_page_{len(visited)}.png"
@@ -254,36 +281,81 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
             # Scroll to trigger lazy-loaded content before finding elements
             # More aggressive scrolling to find all dynamically loaded content
             try:
+                # Wait a bit for initial JS to execute
+                time.sleep(0.5)
+                
                 # Scroll down to load more content (multiple scrolls to trigger all lazy loaders)
                 page_height = page.evaluate("document.body.scrollHeight")
-                scroll_steps = max(5, page_height // 300)  # More scroll steps for better coverage
+                scroll_steps = max(8, page_height // 250)  # Even more scroll steps for JS-heavy sites
                 for i in range(scroll_steps):
                     scroll_pos = (i + 1) * (page_height // scroll_steps)
                     page.evaluate(f"window.scrollTo(0, {scroll_pos})")
-                    time.sleep(0.3)  # Slightly longer wait for content to load
+                    time.sleep(0.4)  # Longer wait for JS-heavy content to load
+                    # Check if page height changed (new content loaded)
+                    new_height = page.evaluate("document.body.scrollHeight")
+                    if new_height > page_height:
+                        page_height = new_height
+                        scroll_steps = max(8, page_height // 250)  # Recalculate steps
+                
                 # Scroll back up and wait for any animations
                 page.evaluate("window.scrollTo(0, 0)")
-                time.sleep(0.5)  # Wait longer for any dynamic content to appear
+                time.sleep(0.8)  # Wait longer for any dynamic content to appear
                 
-                # Try clicking "Load More" or "Show More" buttons if they exist
+                # Try clicking "Load More" or pagination buttons multiple times
+                max_load_more_clicks = 3
+                for click_attempt in range(max_load_more_clicks):
+                    try:
+                        load_more_selectors = [
+                            "button:has-text('Load More')",
+                            "button:has-text('Show More')",
+                            "button:has-text('See More')",
+                            "button:has-text('View More')",
+                            "[data-load-more]",
+                            ".load-more",
+                            ".show-more",
+                            "[aria-label*='more' i]",
+                            "[aria-label*='load' i]",
+                            "button[class*='load']",
+                            "button[class*='more']"
+                        ]
+                        clicked = False
+                        for selector in load_more_selectors:
+                            try:
+                                load_more_btn = page.query_selector(selector)
+                                if load_more_btn and load_more_btn.is_visible():
+                                    load_more_btn.click()
+                                    time.sleep(1.5)  # Wait longer for content to load
+                                    # Re-scroll after loading more
+                                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                                    time.sleep(0.8)
+                                    clicked = True
+                                    break
+                            except:
+                                continue
+                        if not clicked:
+                            break  # No more load more buttons found
+                    except:
+                        break
+                
+                # Try clicking pagination buttons (Next, 2, 3, etc.)
                 try:
-                    load_more_selectors = [
-                        "button:has-text('Load More')",
-                        "button:has-text('Show More')",
-                        "button:has-text('See More')",
-                        "[data-load-more]",
-                        ".load-more",
-                        ".show-more",
-                        "[aria-label*='more' i]"
+                    pagination_selectors = [
+                        "a[aria-label='Next']",
+                        "a[aria-label='next']",
+                        "button[aria-label='Next']",
+                        ".pagination a",
+                        ".pagination button",
+                        "[class*='pagination'] a",
+                        "a:has-text('Next')",
+                        "button:has-text('Next')"
                     ]
-                    for selector in load_more_selectors:
+                    for selector in pagination_selectors:
                         try:
-                            load_more_btn = page.query_selector(selector)
-                            if load_more_btn and load_more_btn.is_visible():
-                                load_more_btn.click()
-                                time.sleep(1)  # Wait for content to load
-                                # Re-scroll after loading more
-                                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                            pagination_btn = page.query_selector(selector)
+                            if pagination_btn and pagination_btn.is_visible():
+                                pagination_btn.click()
+                                time.sleep(1.5)
+                                page.evaluate("window.scrollTo(0, 0)")
                                 time.sleep(0.5)
                                 break
                         except:
@@ -296,16 +368,21 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
             # Find all clickable elements (first pass)
             clickable_elements = find_clickable_elements()
             
-            # Try to find more links by extracting from navigation elements
+            # Wait a bit more for any delayed JS content
+            time.sleep(0.5)
+            
+            # Try to find more links by extracting from navigation elements and dynamic content
             try:
-                # Look for links in common navigation patterns
-                nav_links = page.query_selector_all("nav a, .navigation a, .nav-menu a, .main-menu a, ul.menu a, .sidebar a, footer a, header a")
+                # Look for links in common navigation patterns and dynamic content areas
+                nav_links = page.query_selector_all("nav a, .navigation a, .nav-menu a, .main-menu a, ul.menu a, .sidebar a, footer a, header a, [class*='card'] a, [class*='item'] a, [class*='tile'] a, [class*='grid'] a, [class*='list'] a")
                 seen_hrefs = {elem.get('href') for elem in clickable_elements if elem.get('href')}
                 for nav_link in nav_links:
                     try:
                         href = (nav_link.get_attribute("href") or 
                                nav_link.get_attribute("data-href") or
-                               nav_link.get_attribute("data-url"))
+                               nav_link.get_attribute("data-url") or
+                               nav_link.get_attribute("data-to") or
+                               nav_link.get_attribute("data-route"))
                         if href and not href.startswith(('javascript:', 'mailto:', 'tel:', '#')) and href not in seen_hrefs:
                             elem_id = id(nav_link)
                             if elem_id not in {id(e['element']) for e in clickable_elements}:
@@ -317,6 +394,31 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                                 seen_hrefs.add(href)
                     except:
                         continue
+                
+                # Also extract links from JavaScript data attributes and React/Vue router links
+                try:
+                    # Look for router links in common frameworks
+                    router_links = page.query_selector_all("[data-router-link], [data-navigate], [data-to], [data-route], [routerlink]")
+                    for router_link in router_links:
+                        try:
+                            href = (router_link.get_attribute("data-router-link") or
+                                   router_link.get_attribute("data-navigate") or
+                                   router_link.get_attribute("data-to") or
+                                   router_link.get_attribute("data-route") or
+                                   router_link.get_attribute("routerlink"))
+                            if href and not href.startswith(('javascript:', 'mailto:', 'tel:', '#')) and href not in seen_hrefs:
+                                elem_id = id(router_link)
+                                if elem_id not in {id(e['element']) for e in clickable_elements}:
+                                    clickable_elements.append({
+                                        'element': router_link,
+                                        'type': 'link',
+                                        'href': href
+                                    })
+                                    seen_hrefs.add(href)
+                        except:
+                            continue
+                except:
+                    pass
             except:
                 pass
             
