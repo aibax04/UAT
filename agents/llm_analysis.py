@@ -202,186 +202,94 @@ Average Interactive Elements per Page: {avg_elements_per_page:.1f}
 ## ERRORS FOUND
 {chr(10).join(errors) if errors else 'No errors detected'}
 
----
-
 ## YOUR ROLE AS A SENIOR UX RESEARCHER
 
 When evaluating this UI and user flow, follow these principles:
 
-1. **Think like a real user encountering the interface for the first time** - Put yourself in their shoes. What would confuse, frustrate, or delight them?
+1. Think like a real user encountering the interface for the first time. Evaluate confusion, frustration, delight, trust, clarity, and emotional responses.
+2. Highlight emotional impact at every stage. Identify where users may feel anxious, overloaded, uncertain, frustrated, or satisfied.
+3. Consider discoverability, readability, and accessibility. Point out where users might struggle.
+4. Use human-centered reasoning. Trust intuition and behavior patterns over technical logic.
+5. Consider multiple personas: Novice, Busy, Frustrated, Distracted.
+6. Be direct and honest. Call out anything confusing or poorly structured.
+7. Apply UX principles: Gestalt, Fitts’s Law, Hick’s Law, Nielsen’s heuristics.
+8. Provide actionable improvements with microcopy and layout recommendations.
+9. Always explain WHY something is an issue—tie it to human psychology.
+10. Avoid being overly positive; provide balanced, critical insights.
 
-2. **Highlight emotional impact** - Identify places where users may feel confused, anxious, overloaded, uncertain, frustrated, or satisfied. Judge elements not just functionally, but emotionally.
+---------------------------------------------------
 
-3. **Consider discoverability, readability, and accessibility** - Point out where typical users might struggle to find things, read content, or access features.
-
-4. **Use human-centered reasoning** - Prefer intuition, empathy, and behavioral patterns over rigid technical logic. If something "feels off" or "looks confusing," call it out explicitly.
-
-5. **Consider multiple user personas** - Evaluate how different users might react:
-   - **Novice user**: First-time visitor, unfamiliar with the site
-   - **Busy user**: Wants to accomplish tasks quickly
-   - **Frustrated user**: Already experiencing issues, low patience
-   - **Distracted user**: Multi-tasking, limited attention span
-
-6. **Be direct and honest** - Provide constructive, critical feedback. If something doesn't guide the eye, creates cognitive overload, or breaks user expectations, say so clearly.
-
-7. **Apply UX principles** - Reference modern UI principles when relevant:
-   - **Gestalt principles**: Proximity, similarity, closure, continuity
-   - **Fitts's Law**: Target size and distance for interactive elements
-   - **Hick's Law**: Choice complexity and decision time
-   - **Nielsen's heuristics**: Visibility, feedback, error prevention, etc.
-
-8. **Provide actionable improvements** - Suggest specific design changes, microcopy rewrites, visual hierarchy improvements, or alternative layouts that would enhance the user experience.
-
-9. **Explain the "why"** - Always explain WHY something might confuse or frustrate a real human. Connect issues to human psychology and behavior.
-
-10. **Avoid being overly positive** - Give balanced, honest feedback. Highlight both strengths and areas for improvement.
-
-## REPORT STRUCTURE (Follow This Exact Format)
-
-Generate a comprehensive UX RESEARCH REPORT using this exact structure. Be detailed, specific, and human-centered in each section:
+## REPORT STRUCTURE (FOLLOW EXACTLY)
 
 ### 1. First Impressions & Emotional Response
-
-Start with: "A first-time visitor will likely feel: [emotion]."
-
-Then provide:
-- **Why:** Explain the positive signals (what builds trust/curiosity) and negative signals (what creates confusion/anxiety)
-- **Emotional barriers:** List specific emotions users might experience (confusion, anxiety, mistrust, delight, etc.)
-- Be specific about what elements trigger these emotions
+Start with: “A first-time visitor will likely feel: [emotion].”
+Explain positive/negative signals, emotional barriers, and specific triggers.
 
 ### 2. Navigation & Wayfinding
-
-Structure as:
-- **What works:** List navigation strengths
-- **Problems:** Detail navigation issues with specific examples
-- **Dead-ends/confusing paths:** Identify broken routes or confusing navigation flows from the crawl data
-- **Persona view:** Evaluate navigation for each persona (Novice, Busy, Frustrated, Distracted)
+Include:
+- What works
+- Problems
+- Dead-ends or confusing paths
+- Persona analysis: Novice, Busy, Frustrated, Distracted
 
 ### 3. Cognitive Load & Information Architecture
-
-Cover:
-- Overall flow assessment (top-to-bottom structure)
-- Content repetition issues (if any)
-- Hick's Law violations (too many choices)
-- **Where users might feel lost:** Specific areas that would confuse users
-- IA improvement suggestions
+Include flow clarity, repetition, Hick’s Law issues, confusing points, improvement suggestions.
 
 ### 4. Interactive Elements & Affordances
-
-Evaluate:
-- **Buttons/links:** Affordance clarity, Fitts's Law compliance
-- **Feedback:** Quality of interaction feedback
-- **Clickability:** Whether users understand what's interactive
-- Reference specific elements from the crawl data
+Evaluate clarity, clickability, Fitts’s Law issues, and interaction feedback.
 
 ### 5. Visual Hierarchy & Readability
-
-Include:
-- **Strengths:** What works well visually
-- **Weaknesses:** Competing focal points, whitespace issues, Gestalt principle violations
-- **Result:** How visual issues impact user experience
+Include strengths, weaknesses, Gestalt issues, and how they affect comprehension.
 
 ### 6. Error States & Recovery
-
-Analyze:
-- Specific error examples from crawl data
-- How errors make users feel
-- Recovery mechanisms (or lack thereof)
-- Error tone and messaging quality
+Analyze specific errors found, emotional impact, tone, and ability to recover.
 
 ### 7. Accessibility & Inclusivity
-
-From crawl output, assess:
-- Alt text presence/quality
-- Keyboard navigation indicators
-- Cognitive load for users with disabilities
-- Mobile/responsive considerations (if observable)
+Include alt text findings, ARIA issues, keyboard navigation, cognitive load, mobile considerations.
 
 ### 8. Trust & Credibility
+Identify trust-building and trust-damaging elements, consistency issues.
 
-Evaluate:
-- **Positive:** Trust signals (logos, metrics, testimonials)
-- **Negative:** Elements that reduce trust (errors, inconsistencies, broken features)
+### 9. Specific Pain Points (Prioritized)
+Each pain point must include:
+- Severity (High/Medium/Low)
+- Emotional impact
+- Practical impact
+- Specific example from crawl data
 
-### 9. Specific Pain Points (concrete & prioritized)
+### 10. Actionable Recommendations (Prioritized)
+Organize into:
+- Immediate (must-fix)
+- High-impact UX improvements
+- Microcopy examples
+- QUICK DESIGN SKETCH (a text-based layout improvement)
 
-List each pain point with:
-- **Severity rating:** (High/Medium/Low severity)
-- **Emotional impact:** How it makes users feel
-- **Practical impact:** What users can't do or struggle with
-- Reference specific examples from crawl data
+Each recommendation must include:
+- What to fix
+- Why it matters
+- UX principle reference
+- Exact rewritten microcopy
 
-### 10. Actionable Recommendations (specific, prioritized)
+---------------------------------------------------
 
-Organize as:
-- **Immediate (must-fix):** Critical issues with specific fixes
-- **High-impact UX improvements:** Important enhancements
-- **Microcopy examples:** Provide exact rewritten text for buttons, messages, etc.
-- **QUICK DESIGN SKETCH:** Textual blueprint for improved layout/hierarchy
+## SCORING CRITERIA (MANDATORY)
 
-For each recommendation:
-- Be specific (not generic)
-- Provide exact microcopy when relevant
-- Explain the "why" behind each suggestion
-- Reference UX principles (Gestalt, Fitts's Law, etc.) when applicable
+Compute UI/UX Score out of 10:
 
-## SCORING CRITERIA (Human-Centered Evaluation)
+- Pages Found (0–2 points)
+- Interactivity (0–2 points)
+- Error Rate (0–2 points)
+- Element Discovery (0–2 points)
+- Navigation Quality (0–2 points)
 
-Calculate the **UI/UX Score** (out of 10) based on human experience:
+Apply:
++0.5 to +1 for excellent UX patterns  
+-0.5 to -1 for major UX issues  
 
-**Base Score Calculation:**
-- **Pages Found (0-2 points)**: 
-  - 2 points: 10+ pages discovered (comprehensive site)
-  - 1.5 points: 5-9 pages (good coverage)
-  - 1 point: 2-4 pages (limited but functional)
-  - 0.5 points: 1 page (minimal)
-- **Interactivity (0-2 points)**:
-  - 2 points: 20+ successful interactions (rich, engaging)
-  - 1.5 points: 10-19 interactions (good interactivity)
-  - 1 point: 5-9 interactions (basic functionality)
-  - 0.5 points: 1-4 interactions (minimal)
-- **Error Rate (0-2 points)**:
-  - 2 points: 0-10% errors (smooth, frustration-free)
-  - 1.5 points: 11-25% errors (mostly smooth with minor hiccups)
-  - 1 point: 26-50% errors (noticeable friction)
-  - 0.5 points: 51-75% errors (frustrating experience)
-  - 0 points: 76%+ errors (highly frustrating)
-- **Element Discovery (0-2 points)**:
-  - 2 points: 5+ elements per page (rich, discoverable)
-  - 1.5 points: 3-4 elements per page (adequate)
-  - 1 point: 2 elements per page (sparse)
-  - 0.5 points: 1 element per page (very limited)
-- **Navigation Quality (0-2 points)**:
-  - 2 points: Clear, intuitive navigation (users feel confident)
-  - 1.5 points: Mostly clear (minor confusion possible)
-  - 1 point: Some navigation issues (users may get lost)
-  - 0.5 points: Poor navigation (users feel lost or frustrated)
+Final Output Format:
 
-**IMPORTANT SCORING RULES:**
-- Start with the base calculation above
-- **Add 0.5-1 point** if the site demonstrates excellent UX patterns:
-  - Clear visual hierarchy
-  - Intuitive navigation
-  - Empathetic error handling
-  - Good use of whitespace and typography
-  - Strong affordances and feedback
-- **Subtract 0.5-1 point** if there are major UX issues:
-  - Confusing navigation that would frustrate users
-  - High cognitive load
-  - Poor visual hierarchy
-  - Lack of clear feedback
-  - Accessibility barriers
-- **Final score should reflect real user experience**: Most functional websites should score 6-8/10
-- **Be fair but honest**: If the site works but feels confusing or frustrating, reflect that in the score
-- **Consider the data available**: If we only crawled a few pages, focus on what you observed, but note limitations
-
-**Output Format:**
-At the end of your report, include:
-
-```
 ## FINAL SCORES
-
-**UI/UX Score: X.X/10**
+UI/UX Score: X.X/10
 
 Breakdown:
 - Pages Found: X.X/2
@@ -390,32 +298,40 @@ Breakdown:
 - Element Discovery: X.X/2
 - Navigation Quality: X.X/2
 
-Adjustments applied:
-[Explain any points added or subtracted based on UX patterns observed]
+Adjustments:
+[Explain additions or subtractions]
 
-**Human Experience Summary:**
-[2-4 sentences describing the overall user experience from a human perspective. Be specific about the emotional journey and key friction points. Match the style of the demo report.]
-```
+Human Experience Summary:
+[2–4 sentences summarizing emotional experience and key friction points]
 
-## CRITICAL REQUIREMENTS
+---------------------------------------------------
 
-1. **Be as detailed as the demo report** - Include specific examples, emotional impacts, and concrete recommendations
-2. **Reference crawl data** - Use specific pages, errors, and interactions from the crawl data in your analysis
-3. **Provide exact microcopy** - When suggesting text changes, provide the exact rewritten copy
-4. **Include severity ratings** - Rate pain points as High/Medium/Low severity
-5. **Be specific, not generic** - Avoid vague statements like "improve navigation." Instead, say "consolidate the 8 top-level nav items into 5 with an 'Initiatives' dropdown"
-6. **Match demo quality** - Your report should be as comprehensive, insightful, and actionable as the demo report provided
+## OUTPUT QUALITY & READABILITY REQUIREMENTS (IMPORTANT)
 
-## TOKEN EFFICIENCY
+1. Use clean formatting: short paragraphs, bullet points, numbered lists, bold headings.
+2. Use simple, direct language. No vague statements.
+3. Every insight must reference a specific example (page, button, error, label, etc.).
+4. All recommendations must include: the issue, why it matters, how to fix it, exact microcopy rewrite.
+5. Bullet points MUST be used for emotions, strengths, weaknesses, pain points, navigation issues, and recommendations.
+6. Avoid walls of text. Break long explanations into readable chunks.
+7. The report must be skimmable. A PM or designer should quickly understand key issues.
+8. Tone: professional, empathetic, honest, human-centered.
+9. EVERY issue must include:
 
-While being comprehensive, be concise where possible:
-- Use bullet points for lists
-- Be specific but not verbose
-- Focus on actionable insights over lengthy descriptions
-- Prioritize quality over quantity
+Severity: High / Medium / Low  
+Emotional Impact: [emotion]  
+Practical Impact: [effect on task]
 
-Remember: Your goal is to evaluate this interface as a senior UX researcher would—with empathy, human psychology in mind, and a focus on how real people would actually experience and feel about using this interface. Generate a report that matches the depth, specificity, and actionable nature of the demo report.
+10. NEVER guess. If data is missing: “Data not available in crawl output.”
+
+---------------------------------------------------
+
+## FINAL INSTRUCTION
+Generate a complete, polished, human-centered UX Research Report following ALL rules above. The report must be clear, readable, structured, bullet-pointed, actionable, emotionally aware, and grounded in UX psychology.
 """
+
+
+
 
     enabled_models = [m for m in FREE_MODELS if m["enabled"]]
     
