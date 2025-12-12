@@ -44,8 +44,24 @@ def login_to_app(page, app_name: str):
     
     try:
         print(f"Attempting login to {creds['login_url']}")
-        page.goto(creds["login_url"], wait_until="networkidle", timeout=10000)
-        time.sleep(2)
+        # Navigate with optimized fallback for faster loading
+        try:
+            page.goto(creds["login_url"], wait_until="domcontentloaded", timeout=20000)  # Faster than networkidle
+            time.sleep(1)  # Reduced from 2s
+        except Exception as e:
+            print(f"   Domcontentloaded timeout, trying load state...")
+            try:
+                page.goto(creds["login_url"], wait_until="load", timeout=15000)
+                time.sleep(1)  # Reduced from 2s
+            except Exception as e2:
+                print(f"   Navigation error: {str(e2)[:100]}")
+                # Last resort: try networkidle
+                try:
+                    page.goto(creds["login_url"], wait_until="networkidle", timeout=20000)
+                    time.sleep(1)
+                except:
+                    print(f"   Failed to load login page, continuing anyway...")
+        time.sleep(1)  # Reduced from 2s
         
         
         username_selectors = [

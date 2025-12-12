@@ -61,9 +61,24 @@ def run_crawl(state: State) -> State:
             print(f" Login required for {state['app_name']}")
             print(f"   Navigating to: {creds['login_url']}")
             
-            
-            page.goto(creds["login_url"], wait_until="networkidle", timeout=15000)
-            time.sleep(2)
+            # Navigate with optimized fallback for faster loading
+            try:
+                page.goto(creds["login_url"], wait_until="domcontentloaded", timeout=20000)  # Faster than networkidle
+                time.sleep(1)  # Reduced from 2s
+            except Exception as e:
+                print(f"   Domcontentloaded timeout, trying load state...")
+                try:
+                    page.goto(creds["login_url"], wait_until="load", timeout=15000)
+                    time.sleep(1)  # Reduced from 2s
+                except Exception as e2:
+                    print(f"   Navigation error: {str(e2)[:100]}")
+                    # Last resort: try networkidle
+                    try:
+                        page.goto(creds["login_url"], wait_until="networkidle", timeout=20000)
+                        time.sleep(1)
+                    except:
+                        print(f"   Failed to load login page, continuing anyway...")
+            time.sleep(1)  # Reduced from 2s
             
             
             state["login_success"] = login_to_app(page, state["app_name"])
@@ -71,14 +86,30 @@ def run_crawl(state: State) -> State:
             if state["login_success"]:
                 print(f"✓ Login successful!")
                 
-                time.sleep(3)
+                time.sleep(1.5)  # Reduced from 3s
             else:
                 print(f"⚠ Login may have failed, continuing anyway...")
         else:
             
             print(f" No login required, navigating to {state['start_url']}")
-            page.goto(state["start_url"], wait_until="networkidle", timeout=15000)
-            time.sleep(2)
+            # Navigate with optimized fallback for faster loading
+            try:
+                page.goto(state["start_url"], wait_until="domcontentloaded", timeout=20000)  # Faster than networkidle
+                time.sleep(1)  # Reduced from 2s
+            except Exception as e:
+                print(f"   Domcontentloaded timeout, trying load state...")
+                try:
+                    page.goto(state["start_url"], wait_until="load", timeout=15000)
+                    time.sleep(1)  # Reduced from 2s
+                except Exception as e2:
+                    print(f"   Navigation error: {str(e2)[:100]}")
+                    # Last resort: try networkidle
+                    try:
+                        page.goto(state["start_url"], wait_until="networkidle", timeout=20000)
+                        time.sleep(1)
+                    except:
+                        print(f"   Failed to load start page, continuing anyway...")
+            time.sleep(1)  # Reduced from 2s
         
         
         current_url = page.url

@@ -42,41 +42,35 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
         # Normalize to lowercase for comparison (but keep original for navigation)
         return f"{parsed.scheme}://{parsed.netloc}{path}".lower()
     
-    def wait_for_page_load(timeout=20000):
-        """Wait for page to be fully loaded with better JavaScript support"""
+    def wait_for_page_load(timeout=12000):
+        """Wait for page to be fully loaded with optimized JavaScript support"""
         try:
-            # Wait for network to be idle (more time for JS-heavy sites)
-            page.wait_for_load_state("networkidle", timeout=timeout)
-        except:
-            try:
-                # Fallback to domcontentloaded
-                page.wait_for_load_state("domcontentloaded", timeout=8000)
-            except:
-                pass
-        
-        # Wait for JavaScript to execute and render content
-        # This is crucial for SPAs and JS-heavy sites
-        try:
-            # Wait for common JS frameworks to be ready
-            page.wait_for_function("document.readyState === 'complete'", timeout=8000)
+            # Try domcontentloaded first (faster than networkidle)
+            page.wait_for_load_state("domcontentloaded", timeout=min(8000, timeout))
         except:
             pass
         
-        # Additional wait for dynamic content and async operations
-        time.sleep(1.5)  # Longer wait for JS-heavy sites to fully render
-        
-        # Wait for any pending network requests
+        # Wait for JavaScript to execute (faster check)
         try:
-            page.wait_for_load_state("networkidle", timeout=5000)
+            page.wait_for_function("document.readyState === 'complete'", timeout=5000)
         except:
             pass
         
-        # Scroll page to trigger lazy-loaded content
+        # Reduced wait for dynamic content
+        time.sleep(0.5)  # Reduced from 1.5s
+        
+        # Quick network idle check (shorter timeout)
+        try:
+            page.wait_for_load_state("networkidle", timeout=3000)
+        except:
+            pass
+        
+        # Quick scroll to trigger lazy-loaded content
         try:
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            time.sleep(1.0)  # Longer wait for lazy-loaded content
+            time.sleep(0.3)  # Reduced from 1.0s
             page.evaluate("window.scrollTo(0, 0)")
-            time.sleep(0.5)
+            time.sleep(0.2)  # Reduced from 0.5s
         except:
             pass
     
@@ -85,8 +79,8 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
         elements = []
         seen_elements = set()  # Track by element handle to avoid duplicates
         
-        # Wait a moment for dynamically added links to appear
-        time.sleep(0.3)
+        # Reduced wait for dynamically added links
+        time.sleep(0.1)  # Reduced from 0.3s
         
         # Find all links (including those without href but with onclick)
         # More comprehensive link discovery for modern JS frameworks
@@ -256,16 +250,16 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
             visited.add(normalized)
             print(f"  {'  ' * depth}Visiting [{depth}]: {url}")
             
-            # Navigate to URL with better error handling for JS-heavy sites
+            # Navigate to URL with optimized error handling
             try:
-                # For SPAs, use networkidle to ensure JS has loaded
-                page.goto(url, wait_until="networkidle", timeout=30000)
-                wait_for_page_load()
+                # Try domcontentloaded first (faster than networkidle)
+                page.goto(url, wait_until="domcontentloaded", timeout=20000)
+                wait_for_page_load(timeout=8000)  # Reduced timeout
             except:
                 try:
-                    # Fallback to domcontentloaded if networkidle fails
-                    page.goto(url, wait_until="domcontentloaded", timeout=20000)
-                    wait_for_page_load()
+                    # Fallback to load state if domcontentloaded fails
+                    page.goto(url, wait_until="load", timeout=15000)
+                    wait_for_page_load(timeout=6000)
                 except Exception as e:
                     print(f"    Navigation error: {str(e)[:100]}")
                     return False
@@ -278,55 +272,37 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
             except:
                 pass
             
-            # Scroll to trigger lazy-loaded content before finding elements
-            # More aggressive scrolling to find all dynamically loaded content
+            # Optimized scrolling to trigger lazy-loaded content
             try:
-                # Wait a bit for initial JS to execute
-                time.sleep(0.5)
+                # Reduced wait for initial JS
+                time.sleep(0.2)  # Reduced from 0.5s
                 
-                # Scroll down to load more content (multiple scrolls to trigger all lazy loaders)
+                # Optimized scrolling - fewer steps, faster
                 page_height = page.evaluate("document.body.scrollHeight")
-                scroll_steps = max(12, page_height // 200)  # More scroll steps for better coverage
+                scroll_steps = min(6, max(3, page_height // 400))  # Reduced from 12, increased step size
                 for i in range(scroll_steps):
                     scroll_pos = (i + 1) * (page_height // scroll_steps)
                     page.evaluate(f"window.scrollTo(0, {scroll_pos})")
-                    time.sleep(0.6)  # Longer wait for JS-heavy content to load
-                    # Check if page height changed (new content loaded)
-                    new_height = page.evaluate("document.body.scrollHeight")
-                    if new_height > page_height:
-                        page_height = new_height
-                        scroll_steps = max(12, page_height // 200)  # Recalculate steps
-                        # Continue scrolling if new content appeared
-                        if i < scroll_steps - 1:
-                            continue
+                    time.sleep(0.2)  # Reduced from 0.6s
+                    # Quick check if page height changed
+                    if i % 2 == 0:  # Check every other scroll
+                        new_height = page.evaluate("document.body.scrollHeight")
+                        if new_height > page_height:
+                            page_height = new_height
                 
-                # Scroll back up and wait for any animations
+                # Quick scroll back up
                 page.evaluate("window.scrollTo(0, 0)")
-                time.sleep(1.2)  # Wait longer for any dynamic content to appear
+                time.sleep(0.3)  # Reduced from 1.2s
                 
-                # Try clicking "Load More" or pagination buttons multiple times - more aggressive
-                max_load_more_clicks = 5  # Increased from 3 to 5
+                # Reduced load more clicks for speed
+                max_load_more_clicks = 2  # Reduced from 5
                 for click_attempt in range(max_load_more_clicks):
                     try:
                         load_more_selectors = [
                             "button:has-text('Load More')",
                             "button:has-text('Show More')",
-                            "button:has-text('See More')",
-                            "button:has-text('View More')",
-                            "button:has-text('Load')",
-                            "a:has-text('Load More')",
-                            "a:has-text('Show More')",
                             "[data-load-more]",
-                            "[data-show-more]",
-                            ".load-more",
-                            ".show-more",
-                            ".see-more",
-                            "[aria-label*='more' i]",
-                            "[aria-label*='load' i]",
-                            "button[class*='load']",
-                            "button[class*='more']",
-                            "[onclick*='load']",
-                            "[onclick*='more']"
+                            ".load-more"
                         ]
                         clicked = False
                         for selector in load_more_selectors:
@@ -334,54 +310,23 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                                 load_more_btn = page.query_selector(selector)
                                 if load_more_btn and load_more_btn.is_visible():
                                     load_more_btn.click()
-                                    time.sleep(2.0)  # Wait longer for content to load
-                                    # Re-scroll after loading more
-                                    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                                    time.sleep(1.0)
-                                    # Check if new content appeared
-                                    new_height = page.evaluate("document.body.scrollHeight")
+                                    time.sleep(0.8)  # Reduced from 2.0s
                                     clicked = True
                                     break
                             except:
                                 continue
                         if not clicked:
-                            break  # No more load more buttons found
+                            break
                     except:
                         break
-                
-                # Try clicking pagination buttons (Next, 2, 3, etc.)
-                try:
-                    pagination_selectors = [
-                        "a[aria-label='Next']",
-                        "a[aria-label='next']",
-                        "button[aria-label='Next']",
-                        ".pagination a",
-                        ".pagination button",
-                        "[class*='pagination'] a",
-                        "a:has-text('Next')",
-                        "button:has-text('Next')"
-                    ]
-                    for selector in pagination_selectors:
-                        try:
-                            pagination_btn = page.query_selector(selector)
-                            if pagination_btn and pagination_btn.is_visible():
-                                pagination_btn.click()
-                                time.sleep(1.5)
-                                page.evaluate("window.scrollTo(0, 0)")
-                                time.sleep(0.5)
-                                break
-                        except:
-                            continue
-                except:
-                    pass
             except:
                 pass
             
             # Find all clickable elements (first pass)
             clickable_elements = find_clickable_elements()
             
-            # Wait a bit more for any delayed JS content
-            time.sleep(0.8)  # Longer wait for delayed content
+            # Reduced wait for delayed JS content
+            time.sleep(0.3)  # Reduced from 0.8s
             
             # Extract all hrefs from the page HTML as a fallback (for links that might not be clickable yet)
             try:
@@ -600,12 +545,12 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                         # Click the link
                         try:
                             element.click(timeout=5000)
-                            wait_for_page_load(timeout=10000)
+                            wait_for_page_load(timeout=6000)  # Reduced from 10000
                         except:
                             # Try programmatic navigation
                             try:
-                                page.goto(full_href, wait_until="domcontentloaded", timeout=15000)
-                                wait_for_page_load()
+                                page.goto(full_href, wait_until="domcontentloaded", timeout=12000)  # Reduced from 15000
+                                wait_for_page_load(timeout=5000)
                             except:
                                 # Still record the attempt - ALWAYS record transitions
                                 transition_data = {
@@ -650,8 +595,8 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                         if normalized_new != normalize_url(current_url):
                             try:
                                 # Go back to original page to continue clicking remaining elements
-                                page.goto(current_url, wait_until="domcontentloaded", timeout=10000)
-                                wait_for_page_load()
+                                page.goto(current_url, wait_until="domcontentloaded", timeout=8000)  # Reduced from 10000
+                                wait_for_page_load(timeout=5000)
                             except:
                                 # If navigation back fails, continue with current page
                                 pass
@@ -663,7 +608,7 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                         try:
                             # Scroll element into view
                             element.scroll_into_view_if_needed()
-                            time.sleep(0.2)  # Reduced wait time
+                            time.sleep(0.1)  # Reduced from 0.2s
                             
                             # Handle different element types
                             if elem_type == 'select':
@@ -683,7 +628,7 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                                 # Click the element - always record the interaction
                                 element.click(timeout=5000)
                             
-                            wait_for_page_load(timeout=6000)  # Reduced timeout
+                            wait_for_page_load(timeout=4000)  # Reduced from 6000
                             
                             new_url = page.url
                             normalized_new = normalize_url(new_url)
@@ -711,8 +656,8 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
                             
                             click_count += 1
                             
-                            # Small delay before next click
-                            time.sleep(0.2)
+                            # Minimal delay before next click
+                            time.sleep(0.1)  # Reduced from 0.2s
                             
                         except Exception as e:
                             error_msg = str(e)[:200]
@@ -779,8 +724,8 @@ def crawl_app(page, run_id, start_url=None, depth_limit=100, max_pages=None):
         interactions_before = len(transitions)
         
         if visit_url(url, depth):
-            # Small delay between pages
-            time.sleep(0.2)  # Reduced delay for faster crawling
+            # Minimal delay between pages
+            time.sleep(0.1)  # Reduced from 0.2s
             
             # Reset counter if we found a new page or new interactions
             if len(visited) > pages_before or len(transitions) > interactions_before:
