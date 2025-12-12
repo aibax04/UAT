@@ -333,10 +333,34 @@ function parseReport(reportText) {
         poorUX: 0
     };
 
-    // Extract UX Score
-    const scoreMatch = report.match(/score[:\s]*(\d+(?:\.\d+)?)\s*\/?\s*10/i);
+    // Extract UX Score - try multiple patterns
+    let scoreMatch = report.match(/ui\/ux\s*score[:\s]*(\d+(?:\.\d+)?)\s*\/?\s*10/i);
+    if (!scoreMatch) {
+        scoreMatch = report.match(/ux\s*score[:\s]*(\d+(?:\.\d+)?)\s*\/?\s*10/i);
+    }
+    if (!scoreMatch) {
+        scoreMatch = report.match(/score[:\s]*(\d+(?:\.\d+)?)\s*\/?\s*10/i);
+    }
+    if (!scoreMatch) {
+        // Try to find score in "FINAL SCORES" section
+        const finalScoresSection = report.match(/final\s+scores[\s\S]*?ui\/ux\s*score[:\s]*(\d+(?:\.\d+)?)\s*\/?\s*10/i);
+        if (finalScoresSection) {
+            scoreMatch = finalScoresSection;
+        }
+    }
     if (scoreMatch) {
         metrics.uxScore = parseFloat(scoreMatch[1]);
+        // Ensure score is between 0 and 10
+        metrics.uxScore = Math.max(0, Math.min(10, metrics.uxScore));
+    } else {
+        // Fallback: try to extract any number followed by /10
+        const fallbackMatch = report.match(/(\d+(?:\.\d+)?)\s*\/\s*10/i);
+        if (fallbackMatch) {
+            const potentialScore = parseFloat(fallbackMatch[1]);
+            if (potentialScore >= 0 && potentialScore <= 10) {
+                metrics.uxScore = potentialScore;
+            }
+        }
     }
 
     // Count issues
@@ -592,21 +616,40 @@ function createDashboard(data) {
     // UX Score Gauge
     const scoreBlock = document.createElement('div');
     scoreBlock.className = 'dashboard-block';
+    
+    // Ensure score is valid, default to 0 if not found
+    const displayScore = (metrics.uxScore && metrics.uxScore > 0) ? metrics.uxScore : 0;
+    const scorePercent = (displayScore / 10) * 100;
+    
+    console.log('UX Score extracted:', metrics.uxScore, 'Display score:', displayScore);
+    
     scoreBlock.innerHTML = `
         <h3>UX Score</h3>
         <div class="score-gauge">
-            <div class="score-value" id="uxScoreValue">${metrics.uxScore.toFixed(1)}</div>
+            <div class="score-value" id="uxScoreValue">${displayScore.toFixed(1)}</div>
             <div class="score-label">Out of 10</div>
             <div class="chart-container">
                 <canvas id="scoreChart"></canvas>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill" style="width: ${(metrics.uxScore / 10) * 100}%"></div>
+                <div class="progress-fill" style="width: ${scorePercent}%"></div>
             </div>
         </div>
     `;
     dashboard.appendChild(scoreBlock);
-    setTimeout(() => createScoreChart(metrics.uxScore), 100);
+    
+    // Ensure score block is visible
+    scoreBlock.style.display = 'block';
+    scoreBlock.style.visibility = 'visible';
+    scoreBlock.style.opacity = '1';
+    
+    setTimeout(() => {
+        if (displayScore > 0) {
+            createScoreChart(displayScore);
+        } else {
+            console.warn('UX Score is 0 or not found in report');
+        }
+    }, 100);
 
     // Overview Metrics
     const overviewBlock = document.createElement('div');

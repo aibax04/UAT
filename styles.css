@@ -1588,6 +1588,15 @@ input::placeholder {
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: all !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+}
+
+.chatbot-toggle-logo {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
 }
 
 .chatbot-toggle:hover {
@@ -1667,15 +1676,23 @@ input::placeholder {
 }
 
 .chatbot-icon {
-    font-size: 2em;
     width: 50px;
     height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
+    border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.chatbot-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .chatbot-title h3 {
