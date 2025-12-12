@@ -1041,6 +1041,11 @@ async function loadReport() {
 
         // Show action buttons
         document.getElementById('actionButtons').style.display = 'flex';
+        
+        // Update chatbot badge
+        if (typeof updateChatbotBadge === 'function') {
+            updateChatbotBadge();
+        }
     } catch (error) {
         showError('Error loading report: ' + error.message);
     }
@@ -1214,3 +1219,203 @@ document.getElementById('screenshotModal').addEventListener('click', (e) => {
         document.getElementById('screenshotModal').classList.remove('active');
     }
 });
+
+// Chatbot Functionality
+let chatbotOpen = false;
+let chatHistory = [];
+
+// Initialize chatbot
+function initChatbot() {
+    const chatbotToggle = document.getElementById('chatbotToggle');
+    const chatbotClose = document.getElementById('chatbotClose');
+    const chatbotContainer = document.getElementById('chatbotContainer');
+    const chatbotSend = document.getElementById('chatbotSend');
+    const chatbotInput = document.getElementById('chatbotInput');
+
+    if (!chatbotToggle || !chatbotContainer) {
+        console.error('Chatbot elements not found:', {
+            toggle: !!chatbotToggle,
+            container: !!chatbotContainer
+        });
+        return;
+    }
+
+    // Ensure toggle button is visible
+    chatbotToggle.style.display = 'flex';
+    chatbotToggle.style.visibility = 'visible';
+    chatbotToggle.style.opacity = '1';
+    chatbotToggle.style.zIndex = '10000';
+
+    // Toggle chatbot
+    chatbotToggle.addEventListener('click', () => {
+        chatbotOpen = !chatbotOpen;
+        if (chatbotOpen) {
+            chatbotContainer.classList.add('active');
+            if (chatbotInput) chatbotInput.focus();
+        } else {
+            chatbotContainer.classList.remove('active');
+        }
+    });
+
+    // Close chatbot
+    if (chatbotClose) {
+        chatbotClose.addEventListener('click', () => {
+            chatbotOpen = false;
+            chatbotContainer.classList.remove('active');
+        });
+    }
+
+    // Send message on button click
+    if (chatbotSend) {
+        chatbotSend.addEventListener('click', sendChatMessage);
+    }
+
+    // Send message on Enter key
+    if (chatbotInput) {
+        chatbotInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+    }
+
+    // Show badge when report is available
+    updateChatbotBadge();
+}
+
+// Update chatbot badge visibility
+function updateChatbotBadge() {
+    const badge = document.getElementById('chatbotBadge');
+    if (badge && reportData) {
+        badge.style.display = 'flex';
+    } else if (badge) {
+        badge.style.display = 'none';
+    }
+}
+
+// Send chat message
+async function sendChatMessage() {
+    const chatbotInput = document.getElementById('chatbotInput');
+    const chatbotMessages = document.getElementById('chatbotMessages');
+    const chatbotLoading = document.getElementById('chatbotLoading');
+    const chatbotSend = document.getElementById('chatbotSend');
+
+    if (!chatbotInput || !chatbotMessages) return;
+
+    const message = chatbotInput.value.trim();
+    if (!message) return;
+
+    // Disable input and send button
+    chatbotInput.disabled = true;
+    if (chatbotSend) chatbotSend.disabled = true;
+
+    // Add user message to chat
+    addChatMessage(message, 'user');
+    chatbotInput.value = '';
+
+    // Show loading
+    if (chatbotLoading) chatbotLoading.style.display = 'flex';
+
+    try {
+        // Prepare context with report data if available
+        const context = reportData ? {
+            report: reportData.report || '',
+            url: reportData.url || '',
+            total_pages: reportData.total_pages || 0,
+            total_clicks: reportData.total_clicks || 0,
+            started_at: reportData.started_at || '',
+            finished_at: reportData.finished_at || ''
+        } : null;
+
+        // Send to backend
+        const response = await fetch(`${API_URL}/api/chatbot`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: message,
+                context: context,
+                history: chatHistory.slice(-10) // Last 10 messages for context
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to get response from chatbot');
+        }
+
+        const data = await response.json();
+        
+        // Add bot response to chat
+        addChatMessage(data.response, 'bot');
+        
+        // Update chat history
+        chatHistory.push({ role: 'user', content: message });
+        chatHistory.push({ role: 'assistant', content: data.response });
+
+    } catch (error) {
+        console.error('Chatbot error:', error);
+        addChatMessage('Sorry, I encountered an error. Please make sure the backend server is running and your Gemini API key is configured in the .env file.', 'bot');
+    } finally {
+        // Re-enable input and send button
+        chatbotInput.disabled = false;
+        if (chatbotSend) chatbotSend.disabled = false;
+        if (chatbotLoading) chatbotLoading.style.display = 'none';
+        chatbotInput.focus();
+    }
+}
+
+// Add message to chat
+function addChatMessage(text, type) {
+    const chatbotMessages = document.getElementById('chatbotMessages');
+    if (!chatbotMessages) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chatbot-message ${type}-message`;
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    // Split text into paragraphs
+    const paragraphs = text.split('\n\n').filter(p => p.trim());
+    paragraphs.forEach((para) => {
+        const p = document.createElement('p');
+        p.textContent = para.trim();
+        contentDiv.appendChild(p);
+    });
+
+    // Add timestamp
+    const timeP = document.createElement('p');
+    timeP.className = 'message-time';
+    timeP.textContent = 'Just now';
+    contentDiv.appendChild(timeP);
+
+    messageDiv.appendChild(contentDiv);
+    chatbotMessages.appendChild(messageDiv);
+
+    // Scroll to bottom
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+// Initialize chatbot when DOM is ready
+function initializeChatbotOnReady() {
+    // Wait a bit to ensure all elements are loaded
+    setTimeout(() => {
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        if (chatbotToggle) {
+            initChatbot();
+            console.log('Chatbot initialized successfully');
+        } else {
+            console.error('Chatbot toggle button not found');
+            // Retry after a short delay
+            setTimeout(initializeChatbotOnReady, 500);
+        }
+    }, 100);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeChatbotOnReady);
+} else {
+    initializeChatbotOnReady();
+}

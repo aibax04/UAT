@@ -6,6 +6,10 @@ import os
 import threading
 import json
 from datetime import datetime
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -207,6 +211,98 @@ def get_test_history():
     conn.close()
     
     return jsonify(tests)
+
+@app.route('/api/chatbot', methods=['POST'])
+def chatbot():
+    """Chatbot endpoint using Gemini API"""
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        context = data.get('context', None)
+        history = data.get('history', [])
+
+        if not user_message:
+            return jsonify({'error': 'Message is required'}), 400
+
+        # Get Gemini API key
+        gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        
+        if not gemini_api_key:
+            return jsonify({
+                'error': 'Gemini API key not configured. Please add GEMINI_API_KEY to your .env file.'
+            }), 500
+
+        # Configure Gemini
+        genai.configure(api_key=gemini_api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        # Build system prompt
+        system_prompt = """You are a helpful AI assistant for CRAWL AI, a website analysis and UX research platform. 
+Your role is to help users understand their website analysis reports and provide actionable recommendations for improving their website's user experience.
+
+When a website analysis report is available, you should:
+- Reference specific findings from the report
+- Provide clear, actionable recommendations
+- Explain UX/UI concepts in simple terms
+- Focus on user experience improvements
+- Be professional but friendly
+
+If no report is available, you can still help with general questions about website UX/UI best practices."""
+
+        # Build conversation context
+        conversation_parts = [system_prompt]
+
+        # Add report context if available
+        if context and context.get('report'):
+            report_context = f"""
+Website Analysis Report Context:
+- URL: {context.get('url', 'N/A')}
+- Total Pages Crawled: {context.get('total_pages', 0)}
+- Total Interactions: {context.get('total_clicks', 0)}
+- Analysis Report:
+{context.get('report', '')[:5000]}  # Limit to 5000 chars to avoid token limits
+
+Please use this report to answer the user's questions about their website analysis.
+"""
+            conversation_parts.append(report_context)
+
+        # Add chat history (last few messages for context)
+        for msg in history[-6:]:  # Last 6 messages
+            role = "user" if msg.get('role') == 'user' else "model"
+            content = msg.get('content', '')
+            if content:
+                conversation_parts.append(f"{role}: {content}")
+
+        # Add current user message
+        conversation_parts.append(f"user: {user_message}")
+        conversation_parts.append("model:")
+
+        # Generate response
+        full_prompt = "\n\n".join(conversation_parts)
+        
+        response = model.generate_content(
+            full_prompt,
+            generation_config={
+                'temperature': 0.7,
+                'top_p': 0.95,
+                'top_k': 40,
+                'max_output_tokens': 1024,
+            }
+        )
+
+        bot_response = response.text.strip()
+
+        return jsonify({
+            'response': bot_response,
+            'success': True
+        })
+
+    except Exception as e:
+        print(f"Chatbot error: {str(e)}")
+        return jsonify({
+            'error': f'Error generating response: {str(e)}',
+            'response': 'I apologize, but I encountered an error. Please try again or check if your Gemini API key is correctly configured.'
+        }), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():
