@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from workflows.graph import workflow
@@ -405,6 +405,22 @@ def get_session_status(session_id):
         'is_running': session['task_executor'].is_running,
         'is_paused': session['task_executor'].is_paused
     })
+
+@app.route('/api/workspace/<session_id>/report', methods=['GET'])
+def get_execution_report(session_id):
+    """Get execution report with metrics and score"""
+    try:
+        report = workspace_manager.get_execution_report(session_id)
+        if not report:
+            return jsonify({'error': 'Session not found'}), 404
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/workspace/report/<session_id>')
+def view_report(session_id):
+    """Render report page"""
+    return render_template('workspace_report.html', session_id=session_id)
 
 # ==================== WEBSOCKET EVENTS ====================
 

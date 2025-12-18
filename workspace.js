@@ -71,6 +71,12 @@ function initWorkspace() {
     if (stopExecutionBtn) {
         stopExecutionBtn.addEventListener('click', stopExecution);
     }
+    
+    // Report button
+    const viewReportBtn = document.getElementById('viewReportBtn');
+    if (viewReportBtn) {
+        viewReportBtn.addEventListener('click', viewReport);
+    }
 }
 
 function showWorkspace() {
@@ -402,11 +408,13 @@ function handleTaskUpdate(data) {
         const pauseExecutionBtn = document.getElementById('pauseExecutionBtn');
         const resumeExecutionBtn = document.getElementById('resumeExecutionBtn');
         const stopExecutionBtn = document.getElementById('stopExecutionBtn');
+        const viewReportBtn = document.getElementById('viewReportBtn');
 
         if (startExecutionBtn) startExecutionBtn.disabled = false;
         if (pauseExecutionBtn) pauseExecutionBtn.disabled = true;
         if (resumeExecutionBtn) resumeExecutionBtn.disabled = true;
         if (stopExecutionBtn) stopExecutionBtn.disabled = true;
+        if (viewReportBtn) viewReportBtn.disabled = false;  // Enable report button
     } else if (data.type === 'execution_error') {
         updateStatus(`Error: ${data.error || 'Execution failed'}`);
     } else if (data.type === 'execution_paused') {
@@ -757,6 +765,19 @@ async function stopExecution() {
         console.error('Error stopping execution:', error);
         updateStatus('Error stopping execution');
     }
+}
+
+function viewReport() {
+    if (!currentSessionId) {
+        updateStatus('No active session');
+        alert('No active session. Please start a workspace session first.');
+        return;
+    }
+    
+    // Navigate to report page
+    const reportUrl = `/workspace/report/${currentSessionId}`;
+    console.log('Navigating to report:', reportUrl);
+    window.location.href = reportUrl;
 }
 
 function updateStatus(message) {

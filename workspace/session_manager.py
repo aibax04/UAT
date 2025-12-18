@@ -4,6 +4,7 @@ Manages browser sessions, task planning, and task execution per user session.
 """
 import uuid
 import threading
+import time
 from workspace.browser_session import BrowserSessionManager
 from workspace.task_planner import TaskPlanner
 from workspace.task_executor import TaskExecutor
@@ -48,7 +49,17 @@ class WorkspaceSessionManager:
                 'task_executor': task_executor,
                 'task_planner': task_planner,
                 'url': url,
-                'created_at': threading.current_thread().name
+                'created_at': threading.current_thread().name,
+                'execution_metrics': {
+                    'start_time': None,
+                    'end_time': None,
+                    'total_tasks': 0,
+                    'completed_tasks': 0,
+                    'failed_tasks': 0,
+                    'total_duration': 0,
+                    'average_task_time': 0,
+                    'tasks': []
+                }
             }
         
         return session_id
@@ -86,8 +97,91 @@ class WorkspaceSessionManager:
         if not session:
             return False
         
+        # Initialize execution metrics
+        session['execution_metrics']['start_time'] = time.time()
+        session['execution_metrics']['total_tasks'] = len(session['task_executor'].task_queue.get_all_tasks())
+        
         task_executor = session['task_executor']
         return task_executor.start_execution()
+    
+    def get_execution_report(self, session_id):
+        """Get execution report with metrics"""
+        session = self.get_session(session_id)
+        if not session:
+            return None
+        
+        # Start with session metrics
+        metrics = session.get('execution_metrics', {}).copy()
+        task_executor = session['task_executor']
+        
+        # Get latest metrics from executor if available (executor has more up-to-date data)
+        if hasattr(task_executor, 'execution_metrics') and task_executor.execution_metrics:
+            # Merge executor metrics (they take precedence)
+            executor_metrics = task_executor.execution_metrics
+            metrics.update({
+                'start_time': executor_metrics.get('start_time') or metrics.get('start_time'),
+                'end_time': executor_metrics.get('end_time') or metrics.get('end_time'),
+                'total_duration': executor_metrics.get('total_duration') or metrics.get('total_duration'),
+                'total_tasks': executor_metrics.get('total_tasks') or metrics.get('total_tasks'),
+                'completed_tasks': executor_metrics.get('completed_tasks') or metrics.get('completed_tasks'),
+                'failed_tasks': executor_metrics.get('failed_tasks') or metrics.get('failed_tasks'),
+                'average_task_time': executor_metrics.get('average_task_time') or metrics.get('average_task_time'),
+                'tasks': executor_metrics.get('tasks') or metrics.get('tasks', [])
+            })
+        
+        # Ensure we have task list from executor if metrics don't have it
+        if not metrics.get('tasks') or len(metrics.get('tasks', [])) == 0:
+            # Try to get tasks from queue
+            try:
+                all_tasks = task_executor.task_queue.get_all_tasks()
+                if all_tasks:
+                    metrics['tasks'] = all_tasks
+                    if not metrics.get('total_tasks'):
+                        metrics['total_tasks'] = len(all_tasks)
+                    if not metrics.get('completed_tasks'):
+                        metrics['completed_tasks'] = sum(1 for t in all_tasks if t.get('status') == 'done')
+                    if not metrics.get('failed_tasks'):
+                        metrics['failed_tasks'] = sum(1 for t in all_tasks if t.get('status') == 'failed')
+            except Exception as e:
+                print(f"Error getting tasks from queue: {e}")
+                # Fallback to empty list
+                if not metrics.get('tasks'):
+                    metrics['tasks'] = []
+        
+        # Calculate score out of 10
+        score = self._calculate_score(metrics)
+        
+        return {
+            'session_id': session_id,
+            'url': session['url'],
+            'metrics': metrics,
+            'score': score,
+            'timestamp': time.time()
+        }
+    
+    def _calculate_score(self, metrics):
+        """Calculate execution score out of 10"""
+        total_tasks = metrics.get('total_tasks', 0)
+        if total_tasks == 0:
+            return 0.0
+        
+        completed = metrics.get('completed_tasks', 0)
+        failed = metrics.get('failed_tasks', 0)
+        
+        # Base score: completion rate (0-7 points)
+        completion_rate = completed / total_tasks if total_tasks > 0 else 0
+        base_score = completion_rate * 7
+        
+        # Speed bonus: average task time (0-2 points)
+        avg_time = metrics.get('average_task_time', 0)
+        # Faster tasks get more points (assuming < 5 seconds per task is good)
+        speed_score = max(0, 2 - (avg_time / 5) * 2) if avg_time > 0 else 0
+        
+        # Reliability bonus: no failures (0-1 point)
+        reliability_score = 1.0 if failed == 0 else max(0, 1 - (failed / total_tasks))
+        
+        total_score = base_score + speed_score + reliability_score
+        return min(10.0, round(total_score, 1))
     
     def pause_execution(self, session_id):
         """Pause task execution"""

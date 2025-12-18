@@ -111,6 +111,8 @@ class TaskExecutor:
     
     def _agent_execution_loop(self):
         """Persistent agent execution loop - runs continuously until stopped"""
+        execution_start_time = time.time()
+        
         try:
             while not self.should_stop:
                 # Wait if paused
@@ -162,16 +164,38 @@ class TaskExecutor:
                 if not self.should_stop:
                     time.sleep(0.3)
             
+            # Calculate execution metrics
+            execution_end_time = time.time()
+            total_duration = execution_end_time - execution_start_time
+            all_tasks = self.task_queue.get_all_tasks()
+            completed_count = sum(1 for t in all_tasks if t.get('status') == 'done')
+            failed_count = sum(1 for t in all_tasks if t.get('status') == 'failed')
+            
+            # Calculate average task time
+            task_times = [t.get('execution_time', 0) for t in all_tasks if t.get('execution_time')]
+            avg_task_time = sum(task_times) / len(task_times) if task_times else 0
+            
             # Execution stopped
             with self.lock:
                 self.is_running = False
                 self.current_task = None
+                self.execution_metrics = {
+                    'start_time': execution_start_time,
+                    'end_time': execution_end_time,
+                    'total_duration': total_duration,
+                    'total_tasks': len(all_tasks),
+                    'completed_tasks': completed_count,
+                    'failed_tasks': failed_count,
+                    'average_task_time': avg_task_time,
+                    'tasks': all_tasks
+                }
             
             if self.on_task_update_callback:
                 self.on_task_update_callback({
                     'type': 'execution_complete',
                     'message': 'All tasks completed',
-                    'tasks': self.task_queue.get_all_tasks()
+                    'tasks': all_tasks,
+                    'metrics': self.execution_metrics
                 })
                 
         except Exception as e:
@@ -191,6 +215,9 @@ class TaskExecutor:
     
     def _execute_task_with_steps(self, task):
         """Execute a single task with granular step updates"""
+        import time
+        task_start_time = time.time()
+        
         try:
             action_type = task.get('action_type', 'wait')
             task_name = task.get('name', 'Task')
@@ -217,6 +244,12 @@ class TaskExecutor:
                 task_name=task_name,
                 attributes=task.get('attributes', {})
             )
+            
+            # Calculate execution time
+            task_duration = time.time() - task_start_time
+            task['execution_time'] = task_duration
+            task['start_time'] = task_start_time
+            task['end_time'] = time.time()
             
             # Store execution metadata in task if available
             if hasattr(self.browser_session, 'execution_metadata') and self.browser_session.execution_metadata:
