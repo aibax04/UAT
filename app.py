@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from workflows.graph import workflow
 from db import get_db
+from workspace.session_manager import workspace_manager
 import os
 import threading
 import json
@@ -11,8 +13,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder='.', static_url_path='')
+CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 
 active_runs = {}
@@ -309,8 +312,121 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy'})
 
-if __name__ == '__main__':
+# ==================== WORKSPACE ROUTES ====================
+
+@app.route('/api/workspace/create', methods=['POST'])
+def create_workspace_session():
+    """Create a new workspace session"""
+    data = request.json
+    url = data.get('url')
+    socket_id = data.get('socket_id')
     
+    if not url:
+        return jsonify({'error': 'URL is required'}), 400
+    
+    try:
+        session_id = workspace_manager.create_session(url, socketio, socket_id)
+        return jsonify({
+            'session_id': session_id,
+            'message': 'Workspace session created'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workspace/<session_id>/plan-tasks', methods=['POST'])
+def plan_tasks(session_id):
+    """Plan tasks from natural language instruction"""
+    data = request.json
+    instruction = data.get('instruction')
+    
+    if not instruction:
+        return jsonify({'error': 'Instruction is required'}), 400
+    
+    try:
+        tasks = workspace_manager.plan_tasks(session_id, instruction)
+        return jsonify({
+            'tasks': tasks,
+            'message': f'Planned {len(tasks)} tasks'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workspace/<session_id>/start', methods=['POST'])
+def start_execution(session_id):
+    """Start task execution"""
+    try:
+        success = workspace_manager.start_execution(session_id)
+        if success:
+            return jsonify({'message': 'Execution started'})
+        else:
+            return jsonify({'error': 'Failed to start execution'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workspace/<session_id>/pause', methods=['POST'])
+def pause_execution(session_id):
+    """Pause task execution"""
+    try:
+        workspace_manager.pause_execution(session_id)
+        return jsonify({'message': 'Execution paused'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workspace/<session_id>/resume', methods=['POST'])
+def resume_execution(session_id):
+    """Resume task execution"""
+    try:
+        workspace_manager.resume_execution(session_id)
+        return jsonify({'message': 'Execution resumed'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workspace/<session_id>/stop', methods=['POST'])
+def stop_execution(session_id):
+    """Stop task execution"""
+    try:
+        workspace_manager.stop_execution(session_id)
+        return jsonify({'message': 'Execution stopped'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/workspace/<session_id>/status', methods=['GET'])
+def get_session_status(session_id):
+    """Get session status"""
+    session = workspace_manager.get_session(session_id)
+    if not session:
+        return jsonify({'error': 'Session not found'}), 404
+    
+    return jsonify({
+        'session_id': session_id,
+        'url': session['url'],
+        'is_running': session['task_executor'].is_running,
+        'is_paused': session['task_executor'].is_paused
+    })
+
+# ==================== WEBSOCKET EVENTS ====================
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle WebSocket connection"""
+    print(f'Client connected: {request.sid}')
+    emit('connected', {'message': 'Connected to workspace server'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle WebSocket disconnection"""
+    print(f'Client disconnected: {request.sid}')
+
+@socketio.on('join_session')
+def handle_join_session(data):
+    """Join a workspace session room"""
+    session_id = data.get('session_id')
+    if session_id:
+        join_room(session_id)
+        join_room(request.sid)
+        emit('joined_session', {'session_id': session_id})
+
+if __name__ == '__main__':
     os.makedirs("screenshots", exist_ok=True)
     os.makedirs("logs", exist_ok=True)
     os.makedirs("reports", exist_ok=True)
@@ -319,4 +435,4 @@ if __name__ == '__main__':
     print(" Access the API at: http://localhost:5000")
     print(" Frontend should connect to: http://localhost:5000")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
