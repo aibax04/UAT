@@ -230,14 +230,22 @@ function handleBrowserUpdate(data) {
                 preview.appendChild(iframe);
             }
 
-            // Update iframe URL (force reload if same URL)
+            // Always update iframe URL to show latest state (force reload)
+            // This ensures the preview stays in sync with agent actions
             const currentSrc = iframe.src;
-            if (currentSrc !== data.url) {
+            const baseUrl = data.url.split('?')[0].split('#')[0];  // Get base URL without params
+            const currentBaseUrl = currentSrc.split('?')[0].split('#')[0];
+            
+            if (currentBaseUrl !== baseUrl || data.force_reload) {
+                // Different URL or forced reload - update immediately
                 iframe.src = data.url;
-                console.log('Iframe loaded with URL:', data.url);
+                console.log('Iframe updated with URL:', data.url);
             } else {
+                // Same URL but need to refresh to show latest state
                 // Force reload by appending timestamp
-                iframe.src = data.url + (data.url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+                const separator = data.url.includes('?') ? '&' : '?';
+                iframe.src = data.url + separator + '_t=' + Date.now();
+                console.log('Iframe refreshed (same URL):', data.url);
             }
             
             // Ensure iframe loads and is scrollable
@@ -257,6 +265,21 @@ function handleBrowserUpdate(data) {
             if (urlDisplay) {
                 urlDisplay.textContent = data.url;
             }
+            
+            // Update current action display
+            const currentActionEl = document.getElementById('workspaceCurrentAction');
+            if (currentActionEl) {
+                if (data.action || data.task_name) {
+                    const actionText = data.task_name 
+                        ? `[${data.task_name}] ${data.action || ''}`
+                        : (data.action || '');
+                    currentActionEl.textContent = actionText;
+                    currentActionEl.classList.add('active');
+                } else {
+                    currentActionEl.textContent = '';
+                    currentActionEl.classList.remove('active');
+                }
+            }
 
             // Update status if action provided
             if (data.action) {
@@ -270,15 +293,60 @@ function handleBrowserUpdate(data) {
         if (preview) {
             preview.classList.add('action-active');
         }
-        if (data.action) {
-            updateStatus(`Executing: ${data.action}`);
+        // Show detailed action description
+        const actionDesc = data.description || data.action || 'Executing action...';
+        const taskName = data.task_name ? `[${data.task_name}] ` : '';
+        updateStatus(`${taskName}${actionDesc}`);
+        
+        // Update current action display
+        const currentActionEl = document.getElementById('workspaceCurrentAction');
+        if (currentActionEl) {
+            currentActionEl.textContent = `${taskName}${actionDesc}`;
+            currentActionEl.classList.add('active');
         }
     } else if (data.type === 'action_complete') {
         const preview = document.getElementById('workspaceBrowserPreview');
         if (preview) {
             preview.classList.remove('action-active');
         }
-        updateStatus('Action completed');
+        const actionDesc = data.description || data.action || 'Action';
+        updateStatus(`Completed: ${actionDesc}`);
+        
+        // Clear current action after a delay
+        const currentActionEl = document.getElementById('workspaceCurrentAction');
+        if (currentActionEl) {
+            setTimeout(() => {
+                currentActionEl.textContent = '';
+                currentActionEl.classList.remove('active');
+            }, 1000);
+        }
+    } else if (data.type === 'execution_metadata') {
+        // Display execution metadata (locator used, healing, confidence)
+        const metadata = data.metadata;
+        let statusMsg = data.description || 'Action executed';
+        
+        if (metadata.locator_strategy) {
+            statusMsg += ` [${metadata.locator_strategy}]`;
+        }
+        
+        if (metadata.healing_attempted) {
+            if (metadata.healing_successful) {
+                statusMsg += ' (Self-healed ✓)';
+            } else {
+                statusMsg += ' (Healing failed)';
+            }
+        }
+        
+        if (metadata.confidence) {
+            statusMsg += ` [Confidence: ${(metadata.confidence * 100).toFixed(0)}%]`;
+        }
+        
+        updateStatus(statusMsg);
+        
+        // Log detailed metadata to console
+        console.log('Execution metadata:', metadata);
+    } else if (data.type === 'healing_start' || data.type === 'healing_update') {
+        updateStatus(data.message || 'Attempting self-healing...');
     } else if (data.type === 'error') {
         updateStatus(`Error: ${data.message || 'Unknown error'}`);
     }
@@ -299,6 +367,33 @@ function handleTaskUpdate(data) {
         } else if (task.status === 'failed') {
             updateStatus(`Failed: ${task.name || 'Task ' + task.id}`);
         }
+        
+        // Update message if provided
+        if (data.message) {
+            updateStatus(data.message);
+        }
+    } else if (data.type === 'step_start') {
+        // Step-level update
+        updateStatus(data.step || data.message || 'Executing step...');
+        if (data.task) {
+            updateTaskInUI(data.task);
+        }
+    } else if (data.type === 'step_complete') {
+        // Step completed
+        const statusMsg = data.success 
+            ? `Step completed: ${data.step || data.message || ''}`
+            : `Step failed: ${data.step || data.message || ''}`;
+        updateStatus(statusMsg);
+        if (data.task) {
+            updateTaskInUI(data.task);
+        }
+    } else if (data.type === 'step_error') {
+        updateStatus(`Step error: ${data.error || data.message || 'Unknown error'}`);
+        if (data.task) {
+            updateTaskInUI(data.task);
+        }
+    } else if (data.type === 'execution_started') {
+        updateStatus('Agent execution started');
     } else if (data.type === 'execution_complete') {
         updateStatus('All tasks completed successfully!');
         
@@ -336,12 +431,27 @@ function updateTaskInUI(task) {
         taskList.appendChild(taskItem);
     }
 
+    // Check if task was healed
+    const wasHealed = task.metadata && task.metadata.healing_successful;
+    const healingClass = wasHealed ? 'task-healed' : '';
+    
     // Update task item
-    taskItem.className = `task-item ${task.status}`;
+    taskItem.className = `task-item ${task.status} ${healingClass}`;
+    
+    // Add healing indicator
+    const healingIndicator = wasHealed 
+        ? '<span class="healing-badge" title="This task was self-healed">🔧</span>' 
+        : '';
+    
+    // Add confidence indicator if available
+    const confidence = task.metadata && task.metadata.confidence;
+    const confidenceBadge = confidence 
+        ? `<span class="confidence-badge" title="Locator confidence: ${(confidence * 100).toFixed(0)}%">${(confidence * 100).toFixed(0)}%</span>`
+        : '';
     
     taskItem.innerHTML = `
         <div class="task-item-header">
-            <span class="task-item-name">${task.name || 'Task ' + task.id}</span>
+            <span class="task-item-name">${task.name || 'Task ' + task.id} ${healingIndicator} ${confidenceBadge}</span>
             <span class="task-item-status ${task.status}">${task.status}</span>
         </div>
         <div class="task-item-description">${task.description || ''}</div>

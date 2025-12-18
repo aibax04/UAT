@@ -2273,6 +2273,27 @@ input::placeholder {
     position: relative;
 }
 
+.task-item.task-healed {
+    border-left: 3px solid #667eea;
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(255, 255, 255, 0.02) 5%);
+}
+
+.healing-badge {
+    margin-left: 8px;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.confidence-badge {
+    margin-left: 6px;
+    font-size: 0.75em;
+    color: rgba(102, 126, 234, 0.8);
+    font-weight: 500;
+    padding: 2px 6px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 4px;
+}
+
 .task-item::before {
     content: '';
     position: absolute;
@@ -2451,16 +2472,41 @@ input::placeholder {
     opacity: 0.95;
 }
 
+.workspace-browser-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    max-width: 60%;
+}
+
 .workspace-browser-url {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.85em;
     font-family: monospace;
-    max-width: 60%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 300;
     letter-spacing: 1px;
+}
+
+.workspace-current-action {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.75em;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workspace-current-action.active {
+    opacity: 1;
 }
 
 .workspace-browser-preview {

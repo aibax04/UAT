@@ -338,15 +338,17 @@ def plan_tasks(session_id):
     """Plan tasks from natural language instruction"""
     data = request.json
     instruction = data.get('instruction')
+    auto_start = data.get('auto_start', False)  # Option to auto-start execution
     
     if not instruction:
         return jsonify({'error': 'Instruction is required'}), 400
     
     try:
-        tasks = workspace_manager.plan_tasks(session_id, instruction)
+        tasks = workspace_manager.plan_tasks(session_id, instruction, auto_start=auto_start)
         return jsonify({
             'tasks': tasks,
-            'message': f'Planned {len(tasks)} tasks'
+            'message': f'Planned {len(tasks)} tasks',
+            'auto_started': auto_start
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

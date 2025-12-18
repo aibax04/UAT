@@ -38,12 +38,8 @@ class WorkspaceSessionManager:
         # Create task planner
         task_planner = TaskPlanner()
         
-        # Start browser in background thread
-        def start_browser():
-            browser_session.start(url)
-        
-        browser_thread = threading.Thread(target=start_browser, daemon=True)
-        browser_thread.start()
+        # Start browser (it will create its own thread internally)
+        browser_session.start(url)
         
         # Store session data
         with self.lock:
@@ -62,7 +58,7 @@ class WorkspaceSessionManager:
         with self.lock:
             return self.sessions.get(session_id)
     
-    def plan_tasks(self, session_id, instruction):
+    def plan_tasks(self, session_id, instruction, auto_start=False):
         """Plan tasks for a session"""
         session = self.get_session(session_id)
         if not session:
@@ -77,6 +73,10 @@ class WorkspaceSessionManager:
         # Set tasks in executor
         task_executor = session['task_executor']
         task_executor.set_tasks(tasks)
+        
+        # Auto-start execution if requested
+        if auto_start and tasks:
+            task_executor.start_execution()
         
         return tasks
     
