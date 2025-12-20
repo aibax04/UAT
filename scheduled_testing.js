@@ -129,6 +129,14 @@ async function handleScheduleSubmit(e) {
         scheduleData.date = new Date(dateValue).toISOString();
     }
     
+    // Add email notification settings
+    const notifyEmail = formData.get('notify_email');
+    if (notifyEmail) {
+        scheduleData.notify_email = notifyEmail;
+        scheduleData.notify_on_success = document.getElementById('scheduleNotifyOnSuccess').checked;
+        scheduleData.notify_on_failure = document.getElementById('scheduleNotifyOnFailure').checked;
+    }
+    
     try {
         const response = await fetch(SCHEDULED_TESTING_API, {
             method: 'POST',
@@ -247,6 +255,13 @@ function renderScheduleItem(schedule) {
                     <p style="color: #999; margin: 5px 0; font-size: 14px;">
                         <strong>Last Run:</strong> ${lastRunTime}
                     </p>
+                    ${schedule.notify_email ? `
+                        <p style="color: #999; margin: 5px 0; font-size: 12px;">
+                            <strong>📧 Notifications:</strong> ${escapeHtml(schedule.notify_email)}
+                            ${schedule.notify_on_success ? ' ✅' : ''}${schedule.notify_on_failure ? ' ❌' : ''}
+                            ${schedule.last_notification_status ? ` (${schedule.last_notification_status})` : ''}
+                        </p>
+                    ` : ''}
                     ${schedule.last_error ? `
                         <p style="color: #f5576c; margin: 5px 0; font-size: 12px;">
                             <strong>Error:</strong> ${escapeHtml(schedule.last_error.substring(0, 100))}
@@ -318,10 +333,65 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Test email functionality
+async function testEmailNotification() {
+    const emailInput = document.getElementById('scheduleNotifyEmail');
+    const testResult = document.getElementById('emailTestResult');
+    const testBtn = document.getElementById('testEmailBtn');
+    
+    const email = emailInput.value.trim();
+    if (!email) {
+        testResult.innerHTML = '<span style="color: #f5576c;">Please enter an email address</span>';
+        return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        testResult.innerHTML = '<span style="color: #f5576c;">Invalid email format</span>';
+        return;
+    }
+    
+    testBtn.disabled = true;
+    testBtn.textContent = 'Testing...';
+    testResult.innerHTML = '<span style="color: #999;">Sending test email...</span>';
+    
+    try {
+        const response = await fetch(`${API_URL}/api/scheduled-tests/test-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            testResult.innerHTML = `<span style="color: #4ade80;">✓ ${data.message}</span>`;
+        } else {
+            testResult.innerHTML = `<span style="color: #f5576c;">✗ ${data.error || data.message || 'Failed to send test email'}</span>`;
+        }
+    } catch (error) {
+        testResult.innerHTML = `<span style="color: #f5576c;">✗ Error: ${error.message}</span>`;
+    } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test Email';
+    }
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initScheduledTesting);
 } else {
     initScheduledTesting();
 }
+
+// Attach test email button handler
+document.addEventListener('DOMContentLoaded', () => {
+    const testEmailBtn = document.getElementById('testEmailBtn');
+    if (testEmailBtn) {
+        testEmailBtn.addEventListener('click', testEmailNotification);
+    }
+});
 

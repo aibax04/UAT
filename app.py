@@ -544,7 +544,10 @@ def create_scheduled_test():
             'days_of_week': data.get('days_of_week', []),
             'date': data.get('date'),
             'enabled': data.get('enabled', True),
-            'app_name': app_name
+            'app_name': app_name,
+            'notify_email': data.get('notify_email'),
+            'notify_on_success': data.get('notify_on_success', False),
+            'notify_on_failure': data.get('notify_on_failure', False)
         }
         
         schedule_id = scheduler_service.add_schedule(schedule_data)
@@ -576,7 +579,10 @@ def update_scheduled_test(schedule_id):
             'interval_minutes': data.get('interval_minutes'),
             'days_of_week': data.get('days_of_week', []),
             'date': data.get('date'),
-            'enabled': data.get('enabled', True)
+            'enabled': data.get('enabled', True),
+            'notify_email': data.get('notify_email'),
+            'notify_on_success': data.get('notify_on_success', False),
+            'notify_on_failure': data.get('notify_on_failure', False)
         }
         
         scheduler_service.update_schedule(schedule_id, schedule_data)
@@ -605,6 +611,55 @@ def toggle_scheduled_test(schedule_id):
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scheduled-tests/test-email', methods=['POST'])
+def test_email_notification():
+    """Test email notification configuration"""
+    try:
+        from email_notifier import get_email_notifier
+        
+        data = request.json
+        test_email = data.get('email')
+        if not test_email:
+            return jsonify({'error': 'email is required'}), 400
+        
+        notifier = get_email_notifier()
+        
+        if not notifier.is_configured:
+            return jsonify({
+                'success': False,
+                'error': 'Email notifier not configured',
+                'message': 'Please set SMTP_USER and SMTP_PASSWORD in .env file'
+            }), 400
+        
+        # Send test email
+        summary = {
+            'site_url': 'https://example.com',
+            'task_description': 'Test email notification',
+            'status': 'success',
+            'execution_time': datetime.utcnow().isoformat(),
+            'duration': '1m 23s'
+        }
+        
+        success = notifier.send_test_notification(test_email, summary, 'success')
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Test email sent successfully to {test_email}'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to send test email',
+                'message': 'Check server logs for details'
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 # Register shutdown handler for scheduler
 import atexit

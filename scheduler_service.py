@@ -15,6 +15,14 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from db import get_db
 from workflows.graph import workflow
 
+# Optional email notification support
+try:
+    from email_notifier import get_email_notifier
+    EMAIL_NOTIFIER_AVAILABLE = True
+except ImportError:
+    EMAIL_NOTIFIER_AVAILABLE = False
+    get_email_notifier = None
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -147,6 +155,9 @@ class SchedulerService:
             
             logger.info(f"Scheduled test {schedule_id} completed successfully")
             
+            # Send email notification if configured (non-blocking)
+            SchedulerService._send_notification_async(schedule_id, 'success', site_url, task_description, None)
+            
         except Exception as e:
             # Update status to failed
             error_msg = str(e)
@@ -161,9 +172,174 @@ class SchedulerService:
                 conn.commit()
             except Exception as update_error:
                 logger.error(f"Error updating failed status: {update_error}")
+            
+            # Send email notification if configured (non-blocking)
+            SchedulerService._send_notification_async(schedule_id, 'failed', site_url, task_description, error_msg)
         
         finally:
             conn.close()
+    
+    @staticmethod
+    def _send_notification_async(schedule_id: int, status: str, site_url: str, task_description: str, error: Optional[str]):
+        """
+        Send email notification asynchronously (non-blocking).
+        This method is called after test completion and doesn't block the scheduler.
+        """
+        if not EMAIL_NOTIFIER_AVAILABLE:
+            logger.warning(f"Email notifier not available - skipping notification for schedule {schedule_id}")
+            return
+        
+        import threading
+        
+        def send_notification():
+            """Send notification in background thread"""
+            try:
+                logger.info(f"Attempting to send notification for schedule {schedule_id} (status: {status})")
+                
+                conn = get_db()
+                cursor = conn.cursor()
+                
+                # Get notification settings
+                try:
+                    cursor.execute("""
+                        SELECT notify_email, notify_on_success, notify_on_failure
+                        FROM scheduled_tests
+                        WHERE id = ?
+                    """, (schedule_id,))
+                except Exception as e:
+                    logger.error(f"Error querying notification settings: {e}")
+                    # Try with fallback if columns don't exist
+                    cursor.execute("""
+                        SELECT notify_email, notify_on_success, notify_on_failure
+                        FROM scheduled_tests
+                        WHERE id = ?
+                    """, (schedule_id,))
+                
+                row = cursor.fetchone()
+                if not row:
+                    logger.warning(f"No schedule found for notification: {schedule_id}")
+                    conn.close()
+                    return
+                
+                notify_email, notify_on_success, notify_on_failure = row
+                
+                # Convert SQLite integers to boolean (0/1 -> False/True)
+                notify_on_success = bool(notify_on_success) if notify_on_success is not None else False
+                notify_on_failure = bool(notify_on_failure) if notify_on_failure is not None else False
+                
+                logger.info(f"Notification settings for schedule {schedule_id}: email={notify_email}, on_success={notify_on_success}, on_failure={notify_on_failure}")
+                
+                # Check if notification should be sent
+                should_notify = False
+                if status == 'success' and notify_on_success:
+                    should_notify = True
+                    logger.info(f"Notification triggered: success status and notify_on_success=True")
+                elif status == 'failed' and notify_on_failure:
+                    should_notify = True
+                    logger.info(f"Notification triggered: failed status and notify_on_failure=True")
+                else:
+                    logger.info(f"Notification not triggered: status={status}, notify_on_success={notify_on_success}, notify_on_failure={notify_on_failure}")
+                
+                if not should_notify:
+                    logger.info(f"Skipping notification: should_notify=False")
+                    conn.close()
+                    return
+                
+                if not notify_email:
+                    logger.warning(f"Skipping notification: no email address configured")
+                    conn.close()
+                    return
+                
+                # Parse email addresses (comma-separated)
+                emails = [e.strip() for e in notify_email.split(',') if e.strip()]
+                if not emails:
+                    logger.warning(f"No valid email addresses found in: {notify_email}")
+                    conn.close()
+                    return
+                
+                logger.info(f"Sending notifications to: {emails}")
+                
+                # Get execution time
+                cursor.execute("""
+                    SELECT last_run_time FROM scheduled_tests WHERE id = ?
+                """, (schedule_id,))
+                result = cursor.fetchone()
+                execution_time = result[0] if result else datetime.utcnow().isoformat()
+                
+                conn.close()
+                
+                # Build summary
+                summary = {
+                    'site_url': site_url,
+                    'task_description': task_description or 'Scheduled test execution',
+                    'status': status,
+                    'execution_time': execution_time,
+                    'duration': 'N/A',  # Could be calculated if needed
+                    'error': error[:500] if error else None,
+                    'schedule_id': schedule_id
+                }
+                
+                # Send notifications
+                notifier = get_email_notifier()
+                if not notifier.is_configured:
+                    logger.error(f"Email notifier is not configured - check SMTP_USER and SMTP_PASSWORD environment variables")
+                    # Update status to indicate configuration issue
+                    conn = get_db()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE scheduled_tests 
+                        SET last_notification_status = ?
+                        WHERE id = ?
+                    """, ('not_configured', schedule_id))
+                    conn.commit()
+                    conn.close()
+                    return
+                
+                notify_type = 'success' if status == 'success' else 'failure'
+                
+                logger.info(f"Sending {notify_type} notifications to {len(emails)} recipient(s)")
+                results = notifier.send_batch_notifications(emails, summary, notify_type)
+                logger.info(f"Notification send results: {results}")
+                
+                # Update notification status in database
+                all_succeeded = all(results.values())
+                notification_status = 'sent' if all_succeeded else 'partial_failed'
+                
+                conn = get_db()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    UPDATE scheduled_tests 
+                    SET last_notification_sent = ?, last_notification_status = ?
+                    WHERE id = ?
+                """, (
+                    datetime.utcnow().isoformat(),
+                    notification_status,
+                    schedule_id
+                ))
+                conn.commit()
+                conn.close()
+                
+                logger.info(f"Notifications sent for schedule {schedule_id}: {results}")
+                
+            except Exception as e:
+                logger.error(f"Error sending notification for schedule {schedule_id}: {e}")
+                # Try to update status to failed
+                try:
+                    conn = get_db()
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        UPDATE scheduled_tests 
+                        SET last_notification_status = ?
+                        WHERE id = ?
+                    """, ('failed', schedule_id))
+                    conn.commit()
+                    conn.close()
+                except:
+                    pass
+        
+        # Send in background thread (non-blocking)
+        thread = threading.Thread(target=send_notification, daemon=True)
+        thread.start()
     
     def _extract_app_name(self, url: str) -> str:
         """Extract app name from URL (same logic as existing code)"""
@@ -312,7 +488,8 @@ class SchedulerService:
                 UPDATE scheduled_tests 
                 SET site_url = ?, task_description = ?, frequency = ?,
                     schedule_time = ?, interval_hours = ?, interval_minutes = ?,
-                    days_of_week = ?, schedule_date = ?, enabled = ?
+                    days_of_week = ?, schedule_date = ?, enabled = ?,
+                    notify_email = ?, notify_on_success = ?, notify_on_failure = ?
                 WHERE id = ?
             """, (
                 schedule_data['site_url'],
@@ -324,6 +501,9 @@ class SchedulerService:
                 ','.join(schedule_data.get('days_of_week', [])) if schedule_data.get('days_of_week') else None,
                 schedule_data.get('date'),
                 schedule_data.get('enabled', True),
+                schedule_data.get('notify_email'),
+                schedule_data.get('notify_on_success', False),
+                schedule_data.get('notify_on_failure', False),
                 schedule_id
             ))
             

@@ -367,6 +367,40 @@
                         </label>
                     </div>
 
+                    <!-- Email Notification Settings -->
+                    <div class="form-group" style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
+                        <h3 style="color: #fff; margin-bottom: 15px; font-size: 16px;">Email Notifications</h3>
+                        
+                        <div class="form-group">
+                            <label for="scheduleNotifyEmail">Notify me at (comma-separated emails)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="scheduleNotifyEmail" name="notify_email" 
+                                       placeholder="email@example.com, another@example.com" 
+                                       style="flex: 1;">
+                                <button type="button" id="testEmailBtn" class="back-btn" 
+                                        style="white-space: nowrap;">Test Email</button>
+                            </div>
+                            <small style="color: #999; font-size: 12px; display: block; margin-top: 5px;">
+                                Optional: Enter email addresses to receive notifications after test completion. 
+                                Configure SMTP in .env file (SMTP_USER, SMTP_PASSWORD, etc.)
+                            </small>
+                            <div id="emailTestResult" style="margin-top: 10px; font-size: 12px;"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; color: #fff; margin-bottom: 10px;">
+                                <input type="checkbox" id="scheduleNotifyOnSuccess" name="notify_on_success" 
+                                       style="margin-right: 8px;">
+                                Notify on success
+                            </label>
+                            <label style="display: flex; align-items: center; color: #fff;">
+                                <input type="checkbox" id="scheduleNotifyOnFailure" name="notify_on_failure" 
+                                       style="margin-right: 8px;">
+                                Notify on failure
+                            </label>
+                        </div>
+                    </div>
+
                     <button type="submit" class="start-btn" style="width: 100%;">Create Schedule</button>
                     <button type="button" id="scheduleFormCancel" class="back-btn" style="width: 100%; margin-top: 10px; display: none;">Cancel</button>
                 </form>
