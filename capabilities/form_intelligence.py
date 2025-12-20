@@ -11,12 +11,19 @@ import json
 import re
 from typing import Dict, Any, Optional, List
 from playwright.sync_api import Page
-import google.generativeai as genai
 from dotenv import load_dotenv
 
 from .base_module import BaseCapabilityModule
 
 load_dotenv()
+
+# Optional import for LLM capabilities (lazy load to avoid import errors)
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    genai = None
 
 
 class FormIntelligenceModule(BaseCapabilityModule):
@@ -24,26 +31,46 @@ class FormIntelligenceModule(BaseCapabilityModule):
     
     def __init__(self, page: Page, on_update_callback: Optional[callable] = None):
         super().__init__(page, on_update_callback)
-        # Initialize Gemini for form analysis
-        api_key = os.getenv('GEMINI_API_KEY')
-        if api_key:
-            genai.configure(api_key=api_key)
-            self.llm = genai.GenerativeModel('gemini-1.5-flash')
+        # Initialize Gemini for form analysis (optional, fallback to rules if unavailable)
+        self.llm = None
+        if GEMINI_AVAILABLE:
+            try:
+                api_key = os.getenv('GEMINI_API_KEY')
+                if api_key:
+                    genai.configure(api_key=api_key)
+                    self.llm = genai.GenerativeModel('gemini-1.5-flash')
+            except Exception as e:
+                print(f"Warning: Could not initialize Gemini LLM: {e}. Form intelligence will use rule-based filling only")
         else:
-            self.llm = None
-            print("Warning: GEMINI_API_KEY not set, form intelligence will use rule-based filling only")
+            print("Warning: google.generativeai not available, form intelligence will use rule-based filling only")
     
     def can_handle(self, intent_data: Dict[str, Any]) -> bool:
         """Check if this is a form-related task"""
-        action_type = intent_data.get('action_type', '')
+        action_type = intent_data.get('action_type', '').lower()
         description = intent_data.get('description', '').lower()
-        task_name = intent_data.get('task_name', '').lower()
+        task_name = intent_data.get('task_name', '').lower() or intent_data.get('name', '').lower()
         
-        # Check for form-related keywords
-        form_keywords = ['form', 'fill', 'input', 'submit', 'register', 'signup', 'contact']
-        return (action_type in ['fill', 'form'] or 
-                any(keyword in description or keyword in task_name for keyword in form_keywords) or
-                intent_data.get('capability') == 'form_intelligence')
+        # Check for explicit capability hint
+        if intent_data.get('capability') == 'form_intelligence' or intent_data.get('use_form_intelligence'):
+            return True
+        
+        # Check for form-related keywords in action type
+        if action_type in ['fill', 'form']:
+            # If it's a fill action, check if there are multiple fields or form context
+            # Simple single-field fills might not need form intelligence
+            # But if description mentions form, use it
+            if 'form' in description or 'form' in task_name:
+                return True
+            # If no selector provided, likely needs form detection
+            if not intent_data.get('selector'):
+                return True
+        
+        # Check for form-related keywords in description/task name
+        form_keywords = ['form', 'fill form', 'fill out', 'input', 'register', 'signup', 'sign up', 'contact', 'submit form']
+        if any(keyword in description or keyword in task_name for keyword in form_keywords):
+            return True
+        
+        return False
     
     def execute(self, intent_data: Dict[str, Any]) -> Dict[str, Any]:
         """

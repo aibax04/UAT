@@ -4,6 +4,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from workflows.graph import workflow
 from db import get_db
 from workspace.session_manager import workspace_manager
+from scheduler_service import get_scheduler_service
 import os
 import threading
 import json
@@ -17,6 +18,11 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+# Initialize scheduler service on app startup
+scheduler_service = get_scheduler_service()
+scheduler_service.start()
+# Load existing schedules from database
+scheduler_service.load_existing_schedules()
 
 active_runs = {}
 
@@ -499,6 +505,118 @@ def handle_join_session(data):
         join_room(request.sid)
         emit('joined_session', {'session_id': session_id})
 
+# ==================== Scheduled Testing API Routes ====================
+
+@app.route('/api/scheduled-tests', methods=['GET'])
+def get_scheduled_tests():
+    """Get all scheduled tests"""
+    try:
+        schedules = scheduler_service.get_all_schedules()
+        return jsonify({'schedules': schedules})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scheduled-tests', methods=['POST'])
+def create_scheduled_test():
+    """Create a new scheduled test"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        if not data.get('site_url'):
+            return jsonify({'error': 'site_url is required'}), 400
+        if not data.get('frequency'):
+            return jsonify({'error': 'frequency is required'}), 400
+        
+        # Extract app_name from URL for database storage
+        try:
+            app_name = data['site_url'].split('//')[1].split('/')[0].replace('.', '_')
+        except:
+            app_name = 'unknown_app'
+        
+        schedule_data = {
+            'site_url': data['site_url'],
+            'task_description': data.get('task_description', ''),
+            'frequency': data['frequency'],
+            'time': data.get('time'),
+            'interval_hours': data.get('interval_hours'),
+            'interval_minutes': data.get('interval_minutes'),
+            'days_of_week': data.get('days_of_week', []),
+            'date': data.get('date'),
+            'enabled': data.get('enabled', True),
+            'app_name': app_name
+        }
+        
+        schedule_id = scheduler_service.add_schedule(schedule_data)
+        return jsonify({
+            'schedule_id': schedule_id,
+            'message': 'Scheduled test created successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scheduled-tests/<int:schedule_id>', methods=['PUT'])
+def update_scheduled_test(schedule_id):
+    """Update an existing scheduled test"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        if not data.get('site_url'):
+            return jsonify({'error': 'site_url is required'}), 400
+        if not data.get('frequency'):
+            return jsonify({'error': 'frequency is required'}), 400
+        
+        schedule_data = {
+            'site_url': data['site_url'],
+            'task_description': data.get('task_description', ''),
+            'frequency': data['frequency'],
+            'time': data.get('time'),
+            'interval_hours': data.get('interval_hours'),
+            'interval_minutes': data.get('interval_minutes'),
+            'days_of_week': data.get('days_of_week', []),
+            'date': data.get('date'),
+            'enabled': data.get('enabled', True)
+        }
+        
+        scheduler_service.update_schedule(schedule_id, schedule_data)
+        return jsonify({'message': 'Scheduled test updated successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scheduled-tests/<int:schedule_id>', methods=['DELETE'])
+def delete_scheduled_test(schedule_id):
+    """Delete a scheduled test"""
+    try:
+        scheduler_service.delete_schedule(schedule_id)
+        return jsonify({'message': 'Scheduled test deleted successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/scheduled-tests/<int:schedule_id>/toggle', methods=['POST'])
+def toggle_scheduled_test(schedule_id):
+    """Enable or disable a scheduled test"""
+    try:
+        data = request.json
+        enabled = data.get('enabled', True)
+        scheduler_service.toggle_schedule(schedule_id, enabled)
+        return jsonify({
+            'message': f'Scheduled test {"enabled" if enabled else "disabled"} successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Register shutdown handler for scheduler
+import atexit
+
+@atexit.register
+def shutdown_scheduler():
+    """Shutdown scheduler service on app exit"""
+    try:
+        scheduler_service.shutdown()
+    except:
+        pass
+
 if __name__ == '__main__':
     os.makedirs("screenshots", exist_ok=True)
     os.makedirs("logs", exist_ok=True)
@@ -508,4 +626,7 @@ if __name__ == '__main__':
     print(" Access the API at: http://localhost:5000")
     print(" Frontend should connect to: http://localhost:5000")
     
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    try:
+        socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    finally:
+        scheduler_service.shutdown()

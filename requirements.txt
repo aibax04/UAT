@@ -14,3 +14,4 @@ flask-cors==4.0.0
 flask-socketio==5.3.5
 groq>=0.4.2
 requests>=2.31.0
+APScheduler==3.10.4

@@ -12,6 +12,14 @@ from workspace.smart_locator import SmartLocatorEngine
 from workspace.self_healing_executor import SelfHealingExecutor
 from workspace.element_fingerprint import ElementFingerprint
 
+# Optional smart button resolver (Testim-style)
+try:
+    from workspace.smart_button_resolver import SmartButtonResolver
+    SMART_BUTTON_RESOLVER_AVAILABLE = True
+except ImportError:
+    SMART_BUTTON_RESOLVER_AVAILABLE = False
+    SmartButtonResolver = None
+
 # Optional enterprise capabilities - only imported if available
 try:
     from capabilities.capability_router import CapabilityRouter
@@ -42,6 +50,7 @@ class BrowserSessionManager:
         self.browser_thread = None  # Thread where browser runs
         self._stop_event = threading.Event()  # Event to stop browser thread
         self.capability_router = None  # Optional enterprise capability router
+        self.smart_button_resolver = None  # Optional Testim-style smart button resolver
         
     def start(self, url):
         """Start the browser session and navigate to URL in a dedicated thread"""
@@ -77,6 +86,13 @@ class BrowserSessionManager:
                     self.capability_router = CapabilityRouter(
                         self.page,
                         on_update_callback=self._on_capability_update
+                    )
+                
+                # Initialize smart button resolver if available (optional Testim-style clicking)
+                if SMART_BUTTON_RESOLVER_AVAILABLE and SmartButtonResolver:
+                    self.smart_button_resolver = SmartButtonResolver(
+                        self.page,
+                        on_update_callback=self._on_smart_button_update
                     )
                 
                 # Navigate to URL
@@ -182,34 +198,76 @@ class BrowserSessionManager:
             
             # Execute action based on type with smart locators and self-healing
             if action_type == 'click':
-                # Build element info for smart locator
-                selector = kwargs.get('selector', '')
-                element_info = {
-                    'selector': selector,
-                    'text': kwargs.get('text') or description,
-                    'description': description,
-                    'attributes': kwargs.get('attributes', {})
-                }
+                # Check if smart button resolver should handle this (OPT-IN via use_smart_button=True)
+                use_smart_button = kwargs.get('use_smart_button', False)
+                button_intent = kwargs.get('button_intent') or kwargs.get('intent') or description
                 
-                # Extract attributes from selector if it's an attribute selector
-                if selector.startswith('[') and selector.endswith(']'):
-                    # Parse attribute selector
-                    attr_part = selector[1:-1]
-                    if '=' in attr_part:
-                        attr_name, attr_value = attr_part.split('=', 1)
-                        attr_value = attr_value.strip('"\'')
-                        element_info['attributes'][attr_name.strip()] = attr_value
+                if use_smart_button and self.smart_button_resolver and button_intent:
+                    # Use Testim-style smart button resolver (OPTIONAL)
+                    try:
+                        context = kwargs.get('context', {})
+                        verify_action = kwargs.get('verify_action', True)
+                        timeout = kwargs.get('timeout', 10000)
+                        
+                        success, smart_metadata = self.smart_button_resolver.smart_click_button(
+                            button_intent,
+                            context=context,
+                            verify_action=verify_action,
+                            timeout=timeout
+                        )
+                        
+                        # Convert smart button metadata to execution metadata format
+                        metadata = {
+                            'locator_used': smart_metadata.get('strategy_used'),
+                            'locator_strategy': smart_metadata.get('strategy_used'),
+                            'confidence': smart_metadata.get('confidence', 0.0),
+                            'healing_attempted': smart_metadata.get('healing_occurred', False),
+                            'healing_successful': smart_metadata.get('healing_occurred', False),
+                            'smart_button_intent': button_intent,
+                            'verification_passed': smart_metadata.get('verification_passed'),
+                            'verification_type': smart_metadata.get('verification_type'),
+                            **smart_metadata
+                        }
+                        
+                        if not success:
+                            # Smart button resolver failed
+                            error_msg = smart_metadata.get('error', 'Smart button resolution failed')
+                            raise Exception(error_msg)
+                    except Exception as e:
+                        print(f"Smart button resolver error, falling back to standard click: {e}")
+                        # Fall through to standard execution
+                        use_smart_button = False
                 
-                # Execute with self-healing
-                success, metadata = self.self_healing_executor.execute_click(
-                    element_info,
-                    timeout=10000
-                )
-                
-                if not success:
-                    # All strategies failed - create detailed error
-                    error_msg = self._create_failure_explanation(metadata, 'click')
-                    raise Exception(error_msg)
+                if not use_smart_button:
+                    # Standard execution path (EXISTING LOGIC - UNCHANGED)
+                    # Build element info for smart locator
+                    selector = kwargs.get('selector', '')
+                    element_info = {
+                        'selector': selector,
+                        'text': kwargs.get('text') or description,
+                        'description': description,
+                        'attributes': kwargs.get('attributes', {})
+                    }
+                    
+                    # Extract attributes from selector if it's an attribute selector
+                    if selector.startswith('[') and selector.endswith(']'):
+                        # Parse attribute selector
+                        attr_part = selector[1:-1]
+                        if '=' in attr_part:
+                            attr_name, attr_value = attr_part.split('=', 1)
+                            attr_value = attr_value.strip('"\'')
+                            element_info['attributes'][attr_name.strip()] = attr_value
+                    
+                    # Execute with self-healing
+                    success, metadata = self.self_healing_executor.execute_click(
+                        element_info,
+                        timeout=10000
+                    )
+                    
+                    if not success:
+                        # All strategies failed - create detailed error
+                        error_msg = self._create_failure_explanation(metadata, 'click')
+                        raise Exception(error_msg)
                 
                 # Store execution metadata
                 self.execution_metadata.append({
@@ -251,52 +309,95 @@ class BrowserSessionManager:
                 time.sleep(0.5)
                 
             elif action_type == 'fill':
-                selector = kwargs.get('selector', '')
-                text = kwargs.get('text', '')
-                
-                # Build element info for smart locator
-                element_info = {
-                    'selector': selector,
-                    'text': kwargs.get('label_text') or description,
+                # Check if this is a form-related task that should use form intelligence
+                task_data_for_router = {
+                    'action_type': 'fill',
                     'description': description,
-                    'attributes': kwargs.get('attributes', {})
+                    'name': task_name,
+                    **kwargs
                 }
                 
-                # Extract attributes from selector
-                if selector.startswith('[') and selector.endswith(']'):
-                    attr_part = selector[1:-1]
-                    if '=' in attr_part:
-                        attr_name, attr_value = attr_part.split('=', 1)
-                        attr_value = attr_value.strip('"\'')
-                        element_info['attributes'][attr_name.strip()] = attr_value
+                capability_handled = False
+                if self.capability_router and self.capability_router.should_handle_task(task_data_for_router):
+                    try:
+                        capability_result = self.capability_router.route_task(task_data_for_router)
+                        if capability_result and capability_result.get('success'):
+                            # Form intelligence handled it successfully
+                            metadata = capability_result.get('metadata', {})
+                            self.execution_metadata.append({
+                                'action': 'fill',
+                                'description': description,
+                                'metadata': metadata,
+                                'timestamp': time.time(),
+                                'form_intelligence_used': True
+                            })
+                            
+                            if self.on_update_callback:
+                                self.on_update_callback({
+                                    'type': 'execution_metadata',
+                                    'action': 'fill',
+                                    'metadata': metadata,
+                                    'description': description,
+                                    'form_intelligence_used': True
+                                })
+                            
+                            # Stream update after form fill
+                            time.sleep(0.5)
+                            self.capture_and_stream(f"Filled form: {description}", task_name)
+                            time.sleep(0.3)
+                            capability_handled = True
+                    except Exception as e:
+                        print(f"Form intelligence error, falling back to standard fill: {e}")
+                        # Fall through to standard execution
                 
-                # Execute with self-healing
-                success, metadata = self.self_healing_executor.execute_fill(
-                    element_info,
-                    text,
-                    timeout=10000
-                )
-                
-                if not success:
-                    error_msg = self._create_failure_explanation(metadata, 'fill')
-                    raise Exception(error_msg)
-                
-                # Store execution metadata
-                self.execution_metadata.append({
-                    'action': 'fill',
-                    'description': description,
-                    'metadata': metadata,
-                    'timestamp': time.time()
-                })
-                
-                # Emit execution metadata
-                if self.on_update_callback:
-                    self.on_update_callback({
-                        'type': 'execution_metadata',
+                # Standard fill execution (EXISTING LOGIC - UNCHANGED if capability didn't handle it)
+                if not capability_handled:
+                    selector = kwargs.get('selector', '')
+                    text = kwargs.get('text', '')
+                    
+                    # Build element info for smart locator
+                    element_info = {
+                        'selector': selector,
+                        'text': kwargs.get('label_text') or description,
+                        'description': description,
+                        'attributes': kwargs.get('attributes', {})
+                    }
+                    
+                    # Extract attributes from selector
+                    if selector.startswith('[') and selector.endswith(']'):
+                        attr_part = selector[1:-1]
+                        if '=' in attr_part:
+                            attr_name, attr_value = attr_part.split('=', 1)
+                            attr_value = attr_value.strip('"\'')
+                            element_info['attributes'][attr_name.strip()] = attr_value
+                    
+                    # Execute with self-healing
+                    success, metadata = self.self_healing_executor.execute_fill(
+                        element_info,
+                        text,
+                        timeout=10000
+                    )
+                    
+                    if not success:
+                        error_msg = self._create_failure_explanation(metadata, 'fill')
+                        raise Exception(error_msg)
+                    
+                    # Store execution metadata
+                    self.execution_metadata.append({
                         'action': 'fill',
+                        'description': description,
                         'metadata': metadata,
-                        'description': description
+                        'timestamp': time.time()
                     })
+                    
+                    # Emit execution metadata
+                    if self.on_update_callback:
+                        self.on_update_callback({
+                            'type': 'execution_metadata',
+                            'action': 'fill',
+                            'metadata': metadata,
+                            'description': description
+                        })
                 
                 # Stream update immediately after fill (form might trigger changes)
                 time.sleep(0.2)
@@ -661,6 +762,13 @@ class BrowserSessionManager:
         """Callback for capability module updates"""
         if self.on_update_callback:
             # Transform capability update to match existing update format
+            update['session_id'] = self.session_id
+            self.on_update_callback(update)
+    
+    def _on_smart_button_update(self, update):
+        """Callback for smart button resolver updates"""
+        if self.on_update_callback:
+            # Transform smart button update to match existing update format
             update['session_id'] = self.session_id
             self.on_update_callback(update)
     
