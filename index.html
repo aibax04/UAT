@@ -355,34 +355,40 @@
             </div>
             
             <div class="workspace-agent-popup-body">
-                <div class="workspace-agent-status-section">
-                    <h4>Current Operation</h4>
-                    <div id="workspaceAgentCurrentAction" class="workspace-agent-current-action">
-                        <p>Agent standing by...</p>
-                    </div>
-                </div>
-                
-                <div class="workspace-agent-status-section" style="border-bottom: none; padding-bottom: 0;">
-                    <h4>Execution Report</h4>
-                </div>
-                <div id="workspaceAgentTaskChecklist" class="workspace-agent-task-checklist">
-                    <p class="workspace-agent-empty">No active tasks planned.</p>
-                </div>
-                
-                <div class="workspace-agent-chat-container">
-                    <div id="agentChatMessages" class="workspace-agent-chat-messages">
-                        <div class="agent-chat-msg agent-chat-bot">
-                            <p>System initialized. I am ready to assist with task planning and execution monitoring.</p>
+                <!-- Left Side: Execution Report -->
+                <div class="workspace-agent-report-panel">
+                    <div class="workspace-agent-status-section">
+                        <h4>Current Operation</h4>
+                        <div id="workspaceAgentCurrentAction" class="workspace-agent-current-action">
+                            <p>Agent standing by...</p>
                         </div>
                     </div>
                     
-                    <div class="workspace-agent-chat-input-container">
-                        <input type="text" 
-                               id="workspaceAgentChatInput" 
-                               class="workspace-agent-chat-input" 
-                               placeholder="Command the agent or ask for status..."
-                               autocomplete="off">
-                        <button id="workspaceAgentChatSend" class="workspace-agent-chat-send">SEND</button>
+                    <div class="workspace-agent-status-section" style="border-bottom: none; padding-bottom: 0;">
+                        <h4>Execution Report</h4>
+                    </div>
+                    <div id="workspaceAgentTaskChecklist" class="workspace-agent-task-checklist">
+                        <p class="workspace-agent-empty">No active tasks planned.</p>
+                    </div>
+                </div>
+                
+                <!-- Right Side: Command Interface -->
+                <div class="workspace-agent-command-panel">
+                    <div class="workspace-agent-chat-container">
+                        <div id="agentChatMessages" class="workspace-agent-chat-messages">
+                            <div class="agent-chat-msg agent-chat-bot">
+                                <p>System initialized. I am ready to assist with task planning and execution monitoring.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="workspace-agent-chat-input-container">
+                            <input type="text" 
+                                   id="workspaceAgentChatInput" 
+                                   class="workspace-agent-chat-input" 
+                                   placeholder="Command the agent or ask for status..."
+                                   autocomplete="off">
+                            <button id="workspaceAgentChatSend" class="workspace-agent-chat-send">SEND</button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -2988,7 +2988,7 @@ input::placeholder {
 
 .workspace-agent-popup-content {
     position: fixed;
-    width: 500px;
+    width: 900px; /* Wider to accommodate two panels */
     max-height: 85vh;
     background: #050505; /* Deep black */
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -3064,15 +3064,34 @@ input::placeholder {
     transform: scale(1.1);
 }
 
-/* Body Layout */
+/* Body Layout - Two Column Split */
 .workspace-agent-popup-body {
     padding: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     background: #000000;
     min-height: 0; /* Allow flex shrinking */
+}
+
+/* Left Panel: Execution Report */
+.workspace-agent-report-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    overflow-y: auto;
+    min-width: 0; /* Allow flex shrinking */
+}
+
+/* Right Panel: Command Interface */
+.workspace-agent-command-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0; /* Allow flex shrinking */
 }
 
 /* Section: Current Action */
@@ -3100,9 +3119,10 @@ input::placeholder {
 /* Section: Task Checklist / Report Panel */
 .workspace-agent-task-checklist {
     padding: 20px 25px;
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
     background: #0a0a0a;
+    min-height: 0;
 }
 
 .workspace-agent-task-item {
@@ -3354,10 +3374,12 @@ input::placeholder {
 /* Section: Chat */
 .workspace-agent-chat-container {
     background: #0a0a0a;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
-    height: 300px;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
 }
 
 .workspace-agent-chat-messages {
@@ -3438,19 +3460,20 @@ input::placeholder {
 }
 
 /* Scrollbars */
-.workspace-agent-popup-body::-webkit-scrollbar,
+.workspace-agent-report-panel::-webkit-scrollbar,
 .workspace-agent-task-checklist::-webkit-scrollbar,
 .workspace-agent-chat-messages::-webkit-scrollbar {
     width: 6px;
 }
 
-.workspace-agent-popup-body::-webkit-scrollbar-thumb,
+.workspace-agent-report-panel::-webkit-scrollbar-thumb,
 .workspace-agent-task-checklist::-webkit-scrollbar-thumb,
 .workspace-agent-chat-messages::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
 }
 
+.workspace-agent-report-panel::-webkit-scrollbar-track,
 .workspace-agent-task-checklist::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.02);
 }

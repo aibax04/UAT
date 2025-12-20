@@ -32,7 +32,7 @@ window.openAgentStatusPopup = function(e) {
         
         if (popupContent) {
             // Center the popup on the screen
-            const popupWidth = 500; // Match CSS width
+            const popupWidth = 900; // Match CSS width (two panels)
             const popupHeight = Math.min(600, window.innerHeight * 0.85); // Max 85vh
             
             const centerX = (window.innerWidth - popupWidth) / 2;
