@@ -12,6 +12,14 @@ from workspace.smart_locator import SmartLocatorEngine
 from workspace.self_healing_executor import SelfHealingExecutor
 from workspace.element_fingerprint import ElementFingerprint
 
+# Optional enterprise capabilities - only imported if available
+try:
+    from capabilities.capability_router import CapabilityRouter
+    CAPABILITIES_AVAILABLE = True
+except ImportError:
+    CAPABILITIES_AVAILABLE = False
+    CapabilityRouter = None
+
 
 class BrowserSessionManager:
     """Manages a Playwright browser session with live visual streaming"""
@@ -33,6 +41,7 @@ class BrowserSessionManager:
         self.result_queue = Queue()  # Thread-safe queue for results
         self.browser_thread = None  # Thread where browser runs
         self._stop_event = threading.Event()  # Event to stop browser thread
+        self.capability_router = None  # Optional enterprise capability router
         
     def start(self, url):
         """Start the browser session and navigate to URL in a dedicated thread"""
@@ -63,6 +72,13 @@ class BrowserSessionManager:
                     on_update_callback=self._on_healing_update
                 )
                 
+                # Initialize capability router if available (optional enterprise features)
+                if CAPABILITIES_AVAILABLE and CapabilityRouter:
+                    self.capability_router = CapabilityRouter(
+                        self.page,
+                        on_update_callback=self._on_capability_update
+                    )
+                
                 # Navigate to URL
                 self._navigate_to_url(url)
                 self.current_url = url
@@ -78,11 +94,31 @@ class BrowserSessionManager:
                         if action is None:  # Poison pill to stop
                             break
                         
-                        # Execute action
-                        result = self._execute_action_internal(
-                            action['action_type'],
+                        # Check if capability router should handle this action (enterprise features)
+                        # This is ADDITIVE - only intercepts if a module can handle it
+                        task_data = {
+                            'action_type': action['action_type'],
                             **action['kwargs']
-                        )
+                        }
+                        
+                        capability_handled = False
+                        if self.capability_router and self.capability_router.should_handle_task(task_data):
+                            try:
+                                capability_result = self.capability_router.route_task(task_data)
+                                if capability_result is not None:
+                                    # Capability module handled this task
+                                    capability_handled = True
+                                    result = capability_result.get('success', False)
+                            except Exception as e:
+                                print(f"Capability router error, falling back to standard execution: {e}")
+                                # Fall through to standard execution on error
+                        
+                        # If capability didn't handle it, use standard execution (existing logic unchanged)
+                        if not capability_handled:
+                            result = self._execute_action_internal(
+                                action['action_type'],
+                                **action['kwargs']
+                            )
                         
                         # Put result in result queue
                         self.result_queue.put({
@@ -620,6 +656,13 @@ class BrowserSessionManager:
                 **update_data,
                 'timestamp': time.time()
             })
+    
+    def _on_capability_update(self, update):
+        """Callback for capability module updates"""
+        if self.on_update_callback:
+            # Transform capability update to match existing update format
+            update['session_id'] = self.session_id
+            self.on_update_callback(update)
     
     def _create_failure_explanation(self, metadata: Dict, action_type: str) -> str:
         """Create detailed failure explanation for debugging"""
