@@ -28,21 +28,25 @@ window.openAgentStatusPopup = function(e) {
     if (agentPopup && button) {
         console.log('Opening agent status popup');
         
-        // Get button position
-        const buttonRect = button.getBoundingClientRect();
         const popupContent = agentPopup.querySelector('.workspace-agent-popup-content');
         
         if (popupContent) {
-            // Position popup below and to the right of the button
-            const topPosition = buttonRect.bottom + 10; // 10px below button
-            const leftPosition = buttonRect.left; // Align with button left edge
+            // Center the popup on the screen
+            const popupWidth = 500; // Match CSS width
+            const popupHeight = Math.min(600, window.innerHeight * 0.85); // Max 85vh
             
-            // Adjust if popup would go off screen
-            const maxTop = window.innerHeight - 400; // Leave some space
-            const maxLeft = window.innerWidth - 680; // Popup width + margin
+            const centerX = (window.innerWidth - popupWidth) / 2;
+            const centerY = (window.innerHeight - popupHeight) / 2;
             
-            popupContent.style.top = Math.min(topPosition, maxTop) + 'px';
-            popupContent.style.left = Math.min(leftPosition, maxLeft) + 'px';
+            // Ensure popup stays within viewport bounds
+            const topPosition = Math.max(20, Math.min(centerY, window.innerHeight - popupHeight - 20));
+            const leftPosition = Math.max(20, Math.min(centerX, window.innerWidth - popupWidth - 20));
+            
+            popupContent.style.top = topPosition + 'px';
+            popupContent.style.left = leftPosition + 'px';
+            popupContent.style.right = 'auto';
+            popupContent.style.bottom = 'auto';
+            popupContent.style.transform = 'none';
         }
         
         agentPopup.style.display = 'flex';
@@ -982,49 +986,116 @@ function updateAgentStatusPopup() {
     const currentAction = statusEl ? statusEl.querySelector('p')?.textContent || 'Ready' : 'Ready';
     currentActionEl.innerHTML = `<p class="workspace-agent-action-text">${currentAction}</p>`;
     
-    // Update task checklist
+    // Update task checklist with detailed report format
     if (currentTasks && currentTasks.length > 0) {
-        const checklistHTML = currentTasks.map(task => {
-            const taskId = task.id || 'unknown';
-            const taskName = task.name || `Task ${taskId}`;
-            const taskDesc = task.description || '';
-            const taskStatus = task.status || 'pending';
-            const isChecked = taskStatus === 'done';
-            const hasError = taskStatus === 'failed';
-            const isRunning = taskStatus === 'running';
-            
-            let statusIcon = '⏳';
-            let statusClass = 'pending';
-            if (isChecked) {
-                statusIcon = '✅';
-                statusClass = 'done';
-            } else if (hasError) {
-                statusIcon = '❌';
-                statusClass = 'failed';
-            } else if (isRunning) {
-                statusIcon = '🔄';
-                statusClass = 'running';
-            }
-            
-            return `
-                <div class="workspace-agent-task-item ${statusClass}">
-                    <input type="checkbox" 
-                           class="workspace-agent-task-checkbox" 
-                           ${isChecked ? 'checked' : ''} 
-                           disabled>
-                    <div class="workspace-agent-task-content">
-                        <div class="workspace-agent-task-header">
-                            <span class="workspace-agent-task-icon">${statusIcon}</span>
-                            <span class="workspace-agent-task-name">${taskName}</span>
-                        </div>
-                        ${taskDesc ? `<div class="workspace-agent-task-desc">${taskDesc}</div>` : ''}
-                        ${hasError && task.metadata?.error ? `
-                            <div class="workspace-agent-task-error">Error: ${task.metadata.error}</div>
-                        ` : ''}
-                    </div>
+        // Calculate summary statistics
+        const totalTasks = currentTasks.length;
+        const completedTasks = currentTasks.filter(t => t.status === 'done').length;
+        const failedTasks = currentTasks.filter(t => t.status === 'failed').length;
+        const runningTasks = currentTasks.filter(t => t.status === 'running').length;
+        const pendingTasks = currentTasks.filter(t => t.status === 'pending').length;
+        
+        const checklistHTML = `
+            <div class="workspace-agent-report-summary">
+                <div class="report-summary-item">
+                    <span class="summary-label">Total:</span>
+                    <span class="summary-value">${totalTasks}</span>
                 </div>
-            `;
-        }).join('');
+                <div class="report-summary-item success">
+                    <span class="summary-label">Completed:</span>
+                    <span class="summary-value">${completedTasks}</span>
+                </div>
+                <div class="report-summary-item ${runningTasks > 0 ? 'running' : ''}">
+                    <span class="summary-label">Running:</span>
+                    <span class="summary-value">${runningTasks}</span>
+                </div>
+                <div class="report-summary-item ${failedTasks > 0 ? 'failed' : ''}">
+                    <span class="summary-label">Failed:</span>
+                    <span class="summary-value">${failedTasks}</span>
+                </div>
+            </div>
+            <div class="workspace-agent-report-tasks">
+                ${currentTasks.map(task => {
+                    const taskId = task.id || 'unknown';
+                    const taskName = task.name || `Task ${taskId}`;
+                    const taskDesc = task.description || '';
+                    const taskStatus = task.status || 'pending';
+                    const isChecked = taskStatus === 'done';
+                    const hasError = taskStatus === 'failed';
+                    const isRunning = taskStatus === 'running';
+                    const metadata = task.metadata || {};
+                    
+                    let statusIcon = '⏳';
+                    let statusClass = 'pending';
+                    let statusText = 'Pending';
+                    if (isChecked) {
+                        statusIcon = '✅';
+                        statusClass = 'done';
+                        statusText = 'Completed';
+                    } else if (hasError) {
+                        statusIcon = '❌';
+                        statusClass = 'failed';
+                        statusText = 'Failed';
+                    } else if (isRunning) {
+                        statusIcon = '🔄';
+                        statusClass = 'running';
+                        statusText = 'Running';
+                    }
+                    
+                    // Build execution details
+                    const executionDetails = [];
+                    if (metadata.locator_strategy) {
+                        executionDetails.push(`Strategy: ${metadata.locator_strategy}`);
+                    }
+                    if (metadata.confidence) {
+                        executionDetails.push(`Confidence: ${(metadata.confidence * 100).toFixed(0)}%`);
+                    }
+                    if (metadata.healing_attempted) {
+                        if (metadata.healing_successful) {
+                            executionDetails.push('Self-healed ✓');
+                        } else {
+                            executionDetails.push('Healing failed');
+                        }
+                    }
+                    if (task.execution_time) {
+                        executionDetails.push(`Time: ${task.execution_time.toFixed(2)}s`);
+                    }
+                    if (task.action_type) {
+                        executionDetails.push(`Action: ${task.action_type}`);
+                    }
+                    
+                    return `
+                        <div class="workspace-agent-report-item ${statusClass}">
+                            <div class="report-item-header">
+                                <div class="report-item-status">
+                                    <span class="report-status-icon">${statusIcon}</span>
+                                    <span class="report-status-text">${statusText}</span>
+                                </div>
+                                <div class="report-item-title">${taskName}</div>
+                            </div>
+                            ${taskDesc ? `<div class="report-item-description">${taskDesc}</div>` : ''}
+                            ${executionDetails.length > 0 ? `
+                                <div class="report-item-details">
+                                    ${executionDetails.map(detail => `<span class="detail-badge">${detail}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            ${hasError && metadata.error ? `
+                                <div class="report-item-error">
+                                    <span class="error-icon">⚠️</span>
+                                    <span class="error-text">${metadata.error}</span>
+                                </div>
+                            ` : ''}
+                            ${isChecked && !hasError ? `
+                                <div class="report-item-success">
+                                    <span class="success-icon">✓</span>
+                                    <span class="success-text">Task executed successfully</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
         
         taskChecklistEl.innerHTML = checklistHTML;
     } else {

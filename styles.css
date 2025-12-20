@@ -2987,12 +2987,12 @@ input::placeholder {
 }
 
 .workspace-agent-popup-content {
-    position: fixed; /* JS calculates Top/Left, but we default to center if JS fails */
-    width: 450px;
+    position: fixed;
+    width: 500px;
     max-height: 85vh;
     background: #050505; /* Deep black */
     border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 4px; /* Sharper corners for pro look */
+    border-radius: 8px; /* Softer corners for modern look */
     display: flex;
     flex-direction: column;
     box-shadow: 
@@ -3001,6 +3001,10 @@ input::placeholder {
     animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
     z-index: 100000;
+    /* Center by default if JS positioning fails */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 /* Header Styling */
@@ -3068,12 +3072,14 @@ input::placeholder {
     flex: 1;
     overflow-y: auto;
     background: #000000;
+    min-height: 0; /* Allow flex shrinking */
 }
 
 /* Section: Current Action */
 .workspace-agent-status-section {
     padding: 20px 25px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0a0a0a;
 }
 
 .workspace-agent-status-section h4 {
@@ -3091,11 +3097,12 @@ input::placeholder {
     line-height: 1.5;
 }
 
-/* Section: Task Checklist */
+/* Section: Task Checklist / Report Panel */
 .workspace-agent-task-checklist {
-    padding: 0 25px 20px 25px;
-    max-height: 250px;
+    padding: 20px 25px;
+    max-height: 400px;
     overflow-y: auto;
+    background: #0a0a0a;
 }
 
 .workspace-agent-task-item {
@@ -3106,39 +3113,243 @@ input::placeholder {
     transition: background 0.2s;
 }
 
-.workspace-agent-task-item:last-child {
-    border-bottom: none;
+/* Report Summary */
+.workspace-agent-report-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.workspace-agent-task-icon {
-    margin-right: 15px;
-    font-size: 14px;
-    width: 20px;
-    text-align: center;
+.report-summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    transition: all 0.3s ease;
 }
 
-.workspace-agent-task-content {
-    flex: 1;
+.report-summary-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
-.workspace-agent-task-name {
-    display: block;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 500;
-    margin-bottom: 4px;
+.report-summary-item.success {
+    border-color: rgba(76, 175, 80, 0.3);
+    background: rgba(76, 175, 80, 0.05);
 }
 
-.workspace-agent-task-desc {
+.report-summary-item.running {
+    border-color: rgba(102, 126, 234, 0.3);
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.report-summary-item.failed {
+    border-color: rgba(244, 67, 54, 0.3);
+    background: rgba(244, 67, 54, 0.05);
+}
+
+.summary-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.5);
-    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.summary-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.report-summary-item.success .summary-value {
+    color: #4caf50;
+}
+
+.report-summary-item.running .summary-value {
+    color: #667eea;
+}
+
+.report-summary-item.failed .summary-value {
+    color: #f44336;
+}
+
+/* Report Tasks Container */
+.workspace-agent-report-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Report Item */
+.workspace-agent-report-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+.workspace-agent-report-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.workspace-agent-report-item.done {
+    border-color: rgba(76, 175, 80, 0.2);
+    background: rgba(76, 175, 80, 0.03);
+}
+
+.workspace-agent-report-item.running {
+    border-color: rgba(102, 126, 234, 0.3);
+    background: rgba(102, 126, 234, 0.05);
+    animation: pulse-border 2s infinite;
+}
+
+.workspace-agent-report-item.failed {
+    border-color: rgba(244, 67, 54, 0.3);
+    background: rgba(244, 67, 54, 0.05);
+}
+
+.report-item-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.report-item-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.report-status-icon {
+    font-size: 14px;
+}
+
+.report-status-text {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.workspace-agent-report-item.done .report-status-text {
+    color: #4caf50;
+}
+
+.workspace-agent-report-item.running .report-status-text {
+    color: #667eea;
+}
+
+.workspace-agent-report-item.failed .report-status-text {
+    color: #f44336;
+}
+
+.report-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
     line-height: 1.4;
 }
 
-/* Status Colors */
-.workspace-agent-task-item.done .workspace-agent-task-name { color: #4caf50; text-decoration: line-through; opacity: 0.7; }
-.workspace-agent-task-item.running .workspace-agent-task-name { color: #667eea; }
-.workspace-agent-task-item.failed .workspace-agent-task-name { color: #f44336; }
+.report-item-description {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.5;
+    margin-bottom: 12px;
+    padding-left: 4px;
+}
+
+.report-item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Courier New', monospace;
+}
+
+.report-item-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.error-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.error-text {
+    font-size: 12px;
+    color: #f44336;
+    line-height: 1.4;
+}
+
+.report-item-success {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.success-icon {
+    font-size: 14px;
+    color: #4caf50;
+    flex-shrink: 0;
+}
+
+.success-text {
+    font-size: 12px;
+    color: #4caf50;
+    font-weight: 500;
+}
+
+.workspace-agent-empty {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 13px;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        border-color: rgba(102, 126, 234, 0.6);
+    }
+}
 
 /* Section: Chat */
 .workspace-agent-chat-container {
@@ -3238,6 +3449,10 @@ input::placeholder {
 .workspace-agent-chat-messages::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
+}
+
+.workspace-agent-task-checklist::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
 }
 
 /* Animations */
