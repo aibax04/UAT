@@ -191,9 +191,26 @@ class BrowserSessionManager:
                         'metadata': metadata,
                         'description': description
                     })
+                    
+                    # Emit button clicked event for visual feedback
+                    self.on_update_callback({
+                        'type': 'button_clicked',
+                        'session_id': self.session_id,
+                        'description': description,
+                        'task_name': task_name,
+                        'locator_used': metadata.get('locator_used'),
+                        'locator_strategy': metadata.get('locator_strategy'),
+                        'confidence': metadata.get('confidence'),
+                        'healing_used': metadata.get('healing_successful', False),
+                        'timestamp': time.time()
+                    })
                 
                 # Stream URL update after click (page may have navigated)
                 time.sleep(0.8)  # Allow navigation to start
+                # Store URL after action for travel path tracking
+                url_after = self.page.url if self.page else None
+                if url_after and url_after != self.current_url:
+                    metadata['url_after_action'] = url_after
                 self.capture_and_stream(f"Clicked: {description}", task_name)
                 time.sleep(0.5)
                 
@@ -465,9 +482,26 @@ class BrowserSessionManager:
                         'metadata': metadata,
                         'description': description
                     })
+                    
+                    # Emit button clicked event for visual feedback
+                    self.on_update_callback({
+                        'type': 'button_clicked',
+                        'session_id': self.session_id,
+                        'description': description,
+                        'task_name': task_name,
+                        'locator_used': metadata.get('locator_used'),
+                        'locator_strategy': metadata.get('locator_strategy'),
+                        'confidence': metadata.get('confidence'),
+                        'healing_used': metadata.get('healing_successful', False),
+                        'timestamp': time.time()
+                    })
                 
                 # Stream URL update after click (page may have navigated)
                 time.sleep(0.8)  # Allow navigation to start
+                # Store URL after action for travel path tracking
+                url_after = self.page.url if self.page else None
+                if url_after and url_after != self.current_url:
+                    metadata['url_after_action'] = url_after
                 self.capture_and_stream(f"Clicked: {description}", task_name)
                 time.sleep(0.5)
                     

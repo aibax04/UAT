@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, render_template
+from flask import Flask, request, jsonify, send_file, render_template, make_response
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from workflows.graph import workflow
@@ -250,6 +250,13 @@ When a website analysis report is available, you should:
 - Focus on user experience improvements
 - Be professional but friendly
 
+When workspace task context is available, you should:
+- Help users understand their task execution flow
+- Explain what tasks are completed, running, or failed
+- Provide insights about task workflow and execution patterns
+- Help troubleshoot errors in task execution
+- Answer questions about task status, workflow, and execution details
+
 If no report is available, you can still help with general questions about website UX/UI best practices."""
 
         # Build conversation context
@@ -268,6 +275,36 @@ Website Analysis Report Context:
 Please use this report to answer the user's questions about their website analysis.
 """
             conversation_parts.append(report_context)
+        
+        # Add workspace task context if available
+        if context and context.get('type') == 'workspace_tasks':
+            task_context = context.get('task_context', {})
+            task_details = context.get('task_details', [])
+            
+            task_context_str = f"""
+Workspace Task Execution Context:
+- Current Action: {task_context.get('current_action', 'N/A')}
+- Total Tasks: {task_context.get('total_tasks', 0)}
+- Completed: {task_context.get('completed_tasks', 0)}
+- Failed: {task_context.get('failed_tasks', 0)}
+- Running: {task_context.get('running_tasks', 0)}
+- Pending: {task_context.get('pending_tasks', 0)}
+- Session ID: {task_context.get('session_id', 'N/A')}
+
+Task Details:
+"""
+            for task in task_details[:20]:  # Limit to 20 tasks
+                task_str = f"- Task {task.get('id', 'N/A')}: {task.get('name', 'Unnamed')} [{task.get('status', 'unknown')}]"
+                if task.get('description'):
+                    task_str += f"\n  Description: {task.get('description')}"
+                if task.get('error'):
+                    task_str += f"\n  Error: {task.get('error')}"
+                if task.get('execution_time'):
+                    task_str += f"\n  Execution Time: {task.get('execution_time'):.2f}s"
+                task_context_str += task_str + "\n"
+            
+            task_context_str += "\nPlease use this task context to answer questions about task execution, workflow, errors, and task status."
+            conversation_parts.append(task_context_str)
 
         # Add chat history (last few messages for context)
         for msg in history[-6:]:  # Last 6 messages
@@ -417,10 +454,28 @@ def get_execution_report(session_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# Report route removed - report is now shown inline in index.html
+# Add handler for old report route to prevent WSGI errors
 @app.route('/workspace/report/<session_id>')
-def view_report(session_id):
-    """Render report page"""
-    return render_template('workspace_report.html', session_id=session_id)
+def view_report_redirect(session_id):
+    """Redirect old report route - report is now shown inline"""
+    # Return a proper Flask response to prevent WSGI errors
+    response = make_response("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Report - CRAWL AI</title>
+        <meta http-equiv="refresh" content="0;url=/">
+        <script>window.location.href = '/';</script>
+    </head>
+    <body style="background: #000; color: #fff; padding: 40px; text-align: center;">
+        <p>Report is now shown inline. Redirecting...</p>
+        <a href="/" style="color: #667eea;">Go to Home</a>
+    </body>
+    </html>
+    """)
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    return response
 
 # ==================== WEBSOCKET EVENTS ====================
 

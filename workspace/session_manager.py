@@ -151,10 +151,33 @@ class WorkspaceSessionManager:
         # Calculate score out of 10
         score = self._calculate_score(metrics)
         
+        # Get travel path from browser session (URLs visited)
+        travel_path = []
+        browser_session = session.get('browser_session')
+        if browser_session and hasattr(browser_session, 'current_url') and browser_session.current_url:
+            # Add initial URL
+            travel_path.append(session['url'])
+            # Add current URL if different
+            if browser_session.current_url != session['url']:
+                travel_path.append(browser_session.current_url)
+        
+        # Also extract URLs from tasks that navigated
+        if metrics.get('tasks'):
+            for task in metrics['tasks']:
+                if task.get('action_type') == 'navigate' and task.get('url'):
+                    if task['url'] not in travel_path:
+                        travel_path.append(task['url'])
+                # Track URL changes from task metadata
+                if task.get('metadata') and task.get('metadata', {}).get('url_after_action'):
+                    url_after = task['metadata']['url_after_action']
+                    if url_after not in travel_path:
+                        travel_path.append(url_after)
+        
         return {
             'session_id': session_id,
             'url': session['url'],
             'metrics': metrics,
+            'travel_path': travel_path,
             'score': score,
             'timestamp': time.time()
         }
