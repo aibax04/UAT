@@ -9,8 +9,8 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (already in base image, but ensure deps) and system deps if needed
-RUN playwright install --with-deps chromium
+# Base image mcr.microsoft.com/playwright/python includes browsers, 
+# so we don't need to reinstall them.
 
 # Copy the rest of the application
 COPY . .
