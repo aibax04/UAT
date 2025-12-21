@@ -4,231 +4,18 @@ let pollInterval = null;
 let startTime = null;
 let reportData = null;
 
-// Particle Animation Function
-function createParticleAnimation(buttonElement) {
-    const particleContainer = document.getElementById('particleContainer');
-    const buttonRect = buttonElement.getBoundingClientRect();
-    const formSection = document.getElementById('formSection');
-    
-    // Calculate center of button
-    const startX = buttonRect.left + buttonRect.width / 2;
-    const startY = buttonRect.top + buttonRect.height / 2;
-    
-    // Calculate center of form section
-    const endX = window.innerWidth / 2;
-    const endY = window.innerHeight / 2;
-    
-    // Activate particle container
-    particleContainer.classList.add('active');
-    particleContainer.innerHTML = '';
-    
-    // Create mix of large balls and tiny particles
-    const totalParticleCount = 200;
-    const largeBallCount = 30; // Number of larger balls
-    const tinyParticleCount = totalParticleCount - largeBallCount; // Rest are tiny
-    
-    // Create large balls
-    for (let i = 0; i < largeBallCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle-large';
-        
-        // Random starting position around button (circular burst)
-        const angle = (Math.PI * 2 * i) / largeBallCount;
-        const radius = 20 + Math.random() * 50;
-        const initialX = startX + Math.cos(angle) * radius;
-        const initialY = startY + Math.sin(angle) * radius;
-        
-        particle.style.left = initialX + 'px';
-        particle.style.top = initialY + 'px';
-        
-        // Calculate flow direction to form section center
-        const flowX = endX - initialX;
-        const flowY = endY - initialY;
-        // Add 3D depth with random Z variation
-        const flowZ = (Math.random() - 0.5) * 300;
-        
-        // Set CSS variables for animation
-        particle.style.setProperty('--flow-x', flowX + 'px');
-        particle.style.setProperty('--flow-y', flowY + 'px');
-        particle.style.setProperty('--flow-z', flowZ + 'px');
-        
-        // Large ball size (8-12px)
-        const size = 8 + Math.random() * 4;
-        particle.style.width = size + 'px';
-        particle.style.height = size + 'px';
-        
-        // Random opacity for depth effect
-        const opacity = 0.8 + Math.random() * 0.2;
-        particle.style.opacity = opacity;
-        
-        // Random delay for staggered effect
-        const delay = Math.random() * 0.4;
-        particle.style.animationDelay = delay + 's';
-        
-        // Add particle to container
-        particleContainer.appendChild(particle);
-        
-        // Add flow animation immediately
-        particle.classList.add('particle-flow');
-    }
-    
-    // Create tiny particles
-    for (let i = 0; i < tinyParticleCount; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        
-        // Random starting position around button (circular burst)
-        const angle = (Math.PI * 2 * i) / tinyParticleCount;
-        const radius = 15 + Math.random() * 40;
-        const initialX = startX + Math.cos(angle) * radius;
-        const initialY = startY + Math.sin(angle) * radius;
-        
-        particle.style.left = initialX + 'px';
-        particle.style.top = initialY + 'px';
-        
-        // Calculate flow direction to form section center
-        const flowX = endX - initialX;
-        const flowY = endY - initialY;
-        // Add 3D depth with random Z variation
-        const flowZ = (Math.random() - 0.5) * 300;
-        
-        // Set CSS variables for animation
-        particle.style.setProperty('--flow-x', flowX + 'px');
-        particle.style.setProperty('--flow-y', flowY + 'px');
-        particle.style.setProperty('--flow-z', flowZ + 'px');
-        
-        // Tiny particle size (2-4.5px) - same as before
-        const size = 2 + Math.random() * 2.5;
-        particle.style.width = size + 'px';
-        particle.style.height = size + 'px';
-        
-        // Random opacity for depth effect
-        const opacity = 0.7 + Math.random() * 0.3;
-        particle.style.opacity = opacity;
-        
-        // Random delay for staggered effect (creates wave)
-        const delay = Math.random() * 0.4;
-        particle.style.animationDelay = delay + 's';
-        
-        // Add particle to container
-        particleContainer.appendChild(particle);
-        
-        // Add flow animation immediately
-        particle.classList.add('particle-flow');
-    }
-    
-    // Clean up after animation
-    setTimeout(() => {
-        particleContainer.classList.remove('active');
-        particleContainer.innerHTML = '';
-    }, 2500);
-}
+// Landing page to form transition
+function openForm() {
+    document.getElementById('landingPage').classList.add('slide-up');
 
-// Function to break text into particles and converge to center with blast effect
-function breakTextIntoParticles(textElement, targetX, targetY) {
-    const text = textElement.textContent.trim();
-    const rect = textElement.getBoundingClientRect();
-    const startX = rect.left + rect.width / 2;
-    const startY = rect.top + rect.height / 2;
-    
-    // Hide original text
-    textElement.style.opacity = '0';
-    textElement.style.transition = 'opacity 0.2s ease';
-    
-    // Create particles for each character
-    const particles = [];
-    const chars = text.split('');
-    const totalWidth = rect.width;
-    const charSpacing = chars.length > 1 ? totalWidth / (chars.length - 1) : 0;
-    
-    chars.forEach((char, index) => {
-        if (char === ' ') return; // Skip spaces
-        
-        const particle = document.createElement('span');
-        particle.className = 'text-particle';
-        particle.textContent = char;
-        
-        // Calculate character position
-        const charX = rect.left + (index * charSpacing);
-        const charY = rect.top;
-        
-        particle.style.position = 'fixed';
-        particle.style.left = charX + 'px';
-        particle.style.top = charY + 'px';
-        particle.style.transformOrigin = 'center center';
-        particle.style.willChange = 'transform, opacity';
-        
-        // Calculate distance to target
-        const deltaX = targetX - charX;
-        const deltaY = targetY - charY;
-        
-        // Calculate blast direction (outward first)
-        const angle = Math.atan2(charY - startY, charX - startX);
-        const blastDistance = 50 + Math.random() * 30; // Random blast distance
-        const blastX = Math.cos(angle) * blastDistance;
-        const blastY = Math.sin(angle) * blastDistance;
-        
-        document.body.appendChild(particle);
-        particles.push(particle);
-        
-        // Phase 1: Blast outward (slower)
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                particle.style.transition = 'all 0.6s cubic-bezier(0.5, 0, 0.8, 1)';
-                particle.style.transform = `translate3d(${blastX}px, ${blastY}px, 0) scale(1.2) rotate(${Math.random() * 360}deg)`;
-                particle.style.opacity = '0.8';
-            }, index * 15);
-        });
-        
-        // Phase 2: Converge to center (smooth)
-        setTimeout(() => {
-            particle.style.transition = 'all 0.8s cubic-bezier(0.2, 0, 0.1, 1)';
-            particle.style.transform = `translate3d(${deltaX}px, ${deltaY}px, 0) scale(0.15) rotate(0deg)`;
-            particle.style.opacity = '0';
-        }, 600 + (index * 15));
-    });
-    
-    // Clean up particles
-    setTimeout(() => {
-        particles.forEach(p => {
-            if (p.parentNode) {
-                p.parentNode.removeChild(p);
-            }
-        });
-    }, 2000);
-}
-
-// Landing page to form transition with text-to-particle animation
-document.getElementById('startCrawlingBtn').addEventListener('click', () => {
-    const button = document.getElementById('startCrawlingBtn');
-    const buttonRect = button.getBoundingClientRect();
-    const targetX = buttonRect.left + buttonRect.width / 2;
-    const targetY = buttonRect.top + buttonRect.height / 2;
-    
-    // Get the CRAWL AI text
-    const crawlAiText = document.querySelector('.hero-section h1');
-    
-    // Break text into particles and converge to button
-    if (crawlAiText) {
-        breakTextIntoParticles(crawlAiText, targetX, targetY);
-    }
-    
-    // After text converges, create particle ball animation
-    // Start particle ball when text is converging (smooth transition)
-    setTimeout(() => {
-        createParticleAnimation(button);
-    }, 1000);
-    
-    // Delay the page transition to allow particles to form
-    setTimeout(() => {
-        document.getElementById('landingPage').classList.add('slide-up');
-    }, 1400);
-    
     setTimeout(() => {
         document.getElementById('formSection').classList.add('active');
         document.getElementById('backBtn').style.display = 'block';
-    }, 1900);
-});
+    }, 500);
+}
+
+document.getElementById('startCrawlingBtn').addEventListener('click', openForm);
+document.getElementById('ctaStartBtn').addEventListener('click', openForm);
 
 // Back button
 document.getElementById('backBtn').addEventListener('click', () => {
@@ -242,7 +29,7 @@ document.getElementById('backBtn').addEventListener('click', () => {
         setTimeout(() => {
             document.getElementById('landingPage').classList.remove('slide-up');
             document.getElementById('backBtn').style.display = 'none';
-            
+
             // Restore CRAWL AI text visibility
             const crawlAiText = document.querySelector('.hero-section h1');
             if (crawlAiText) {
@@ -313,7 +100,7 @@ async function pollStatus() {
 
 function updateUI(data) {
     document.getElementById('progressText').textContent = data.progress || 'Running';
-    
+
     // Update duration
     if (startTime) {
         const duration = Math.floor((Date.now() - startTime) / 1000);
@@ -376,7 +163,7 @@ function parseReport(reportText) {
 
 function extractSummary(reportText) {
     if (!reportText || reportText.length < 50) return null;
-    
+
     // Try to extract "Human Experience Summary" section (5-6 lines)
     // Format 1: **Human Experience Summary:** followed by text (5-6 lines)
     let summaryMatch = reportText.match(/\*\*Human Experience Summary:\*\*\s*([^\n]+(?:\n[^\n]+){0,5})/i);
@@ -386,14 +173,14 @@ function extractSummary(reportText) {
         summary = summary.replace(/\*\*/g, '').replace(/\[([^\]]+)\]/g, '$1');
         if (summary.length > 30) return summary;
     }
-    
+
     // Format 2: Human Experience Summary: (without bold, can be in brackets or after colon)
     summaryMatch = reportText.match(/Human Experience Summary:?\s*\[([^\]]+)\]/i);
     if (summaryMatch) {
         let summary = summaryMatch[1].trim();
         if (summary.length > 30) return summary;
     }
-    
+
     // Format 3: Human Experience Summary: followed by text (no brackets, 5-6 lines)
     summaryMatch = reportText.match(/Human Experience Summary:?\s*([^\n]+(?:\n[^\n]+){0,5})/i);
     if (summaryMatch) {
@@ -408,7 +195,7 @@ function extractSummary(reportText) {
             return summary;
         }
     }
-    
+
     // Format 4: Try to find summary after "FINAL SCORES" section (5-6 lines)
     const finalScoresMatch = reportText.match(/FINAL SCORES[\s\S]*?Human Experience Summary:?\s*\[?([^\n\]]+(?:\n[^\n\]]+){0,5})/i);
     if (finalScoresMatch) {
@@ -418,7 +205,7 @@ function extractSummary(reportText) {
             return summary;
         }
     }
-    
+
     // Fallback 1: Extract from "A first-time visitor will likely feel" pattern (demo format) - get 5-6 lines
     const firstTimeMatch = reportText.match(/A first-time visitor will likely feel[^\n]+[^\n]+[^\n]+[^\n]+[^\n]+[^\n]+/i);
     if (firstTimeMatch) {
@@ -429,21 +216,21 @@ function extractSummary(reportText) {
             return summary.substring(0, 600); // Allow for 5-6 lines
         }
     }
-    
+
     // Fallback 2: Extract from "First Impressions" section - get 5-6 lines
     const firstImpressionsMatch = reportText.match(/First Impressions[^\n]*\n[^\n]*\n([^\n]+(?:\n[^\n]+){0,5})/i);
     if (firstImpressionsMatch) {
         let summary = firstImpressionsMatch[1].trim();
         if (summary.length > 40) return summary;
     }
-    
+
     // Fallback 3: Extract first meaningful paragraph from report (5-6 lines worth)
     const paragraphs = reportText.split('\n\n').filter(p => p.trim().length > 50);
     if (paragraphs.length > 0) {
         // Find first paragraph that looks like a summary
         for (let para of paragraphs) {
-            if (para.length > 100 && para.length < 800 && 
-                !para.toLowerCase().includes('score') && 
+            if (para.length > 100 && para.length < 800 &&
+                !para.toLowerCase().includes('score') &&
                 !para.toLowerCase().includes('breakdown') &&
                 !para.toLowerCase().includes('adjustments applied')) {
                 // Get first 5-6 lines
@@ -455,7 +242,7 @@ function extractSummary(reportText) {
             }
         }
     }
-    
+
     // Fallback 4: Extract from "Why:" section in First Impressions (usually has good summary content)
     const whyMatch = reportText.match(/Why:[\s\S]*?([^\n]+(?:\n[^\n]+){0,5})/i);
     if (whyMatch) {
@@ -465,7 +252,7 @@ function extractSummary(reportText) {
             return summary.substring(0, 600);
         }
     }
-    
+
     return null;
 }
 
@@ -476,14 +263,14 @@ function createDashboard(data) {
     const metrics = parseReport(data.report || '');
     const totalPages = data.total_pages || 0;
     const totalClicks = data.total_clicks || 0;
-    const duration = data.started_at && data.finished_at ? 
+    const duration = data.started_at && data.finished_at ?
         Math.floor((new Date(data.finished_at) - new Date(data.started_at)) / 1000) : 0;
 
     // Extract Human Experience Summary from report
     const summary = extractSummary(data.report || '');
     console.log('Summary extracted:', summary ? summary.substring(0, 100) + '...' : 'null');
     console.log('Report length:', (data.report || '').length);
-    
+
     // UX Experience Summary (displayed prominently at top)
     // Always show summary block
     const summaryBlock = document.createElement('div');
@@ -491,14 +278,14 @@ function createDashboard(data) {
     summaryBlock.style.display = 'block';
     summaryBlock.style.visibility = 'visible';
     summaryBlock.style.opacity = '1';
-    
+
     // Always show summary - extract or use fallback (5-6 lines)
     let displaySummary = summary;
-    
+
     if (!displaySummary || displaySummary.length < 30) {
         // Try to extract a fallback summary from the report (5-6 lines)
         const reportText = data.report || '';
-        
+
         // Try to get content from First Impressions section (5-6 lines)
         const firstImpMatch = reportText.match(/First Impressions[^\n]*\n[^\n]*\n([^\n]+(?:\n[^\n]+){0,5})/i);
         if (firstImpMatch) {
@@ -511,9 +298,9 @@ function createDashboard(data) {
         } else if (reportText.length > 100) {
             // Get first meaningful paragraph (5-6 lines worth)
             const paragraphs = reportText.split('\n\n').filter(p => p.trim().length > 50);
-            const firstPara = paragraphs.find(p => 
-                p.trim().length > 100 && 
-                p.trim().length < 800 && 
+            const firstPara = paragraphs.find(p =>
+                p.trim().length > 100 &&
+                p.trim().length < 800 &&
                 !p.toLowerCase().includes('score') &&
                 !p.toLowerCase().includes('breakdown')
             );
@@ -531,7 +318,7 @@ function createDashboard(data) {
             }
         }
     }
-    
+
     // Format summary to ensure it's 5-6 lines if it's too short
     if (displaySummary && displaySummary.length > 30) {
         // Split into lines and ensure we have meaningful content
@@ -552,7 +339,7 @@ function createDashboard(data) {
             // Use the lines as-is if we have 3-6 lines
             displaySummary = lines.join('\n');
         }
-        
+
         summaryBlock.innerHTML = `
             <h3>UX Experience Summary</h3>
             <div class="summary-text">${displaySummary}</div>
@@ -564,14 +351,14 @@ function createDashboard(data) {
             <div class="summary-text">Analysis complete. Review the detailed report below for comprehensive UX insights and recommendations.</div>
         `;
     }
-    
+
     // Force append at the beginning and ensure visibility
     if (dashboard.firstChild) {
         dashboard.insertBefore(summaryBlock, dashboard.firstChild);
     } else {
         dashboard.appendChild(summaryBlock);
     }
-    
+
     // Force visibility with inline styles (completely override any CSS)
     summaryBlock.style.setProperty('display', 'block', 'important');
     summaryBlock.style.setProperty('visibility', 'visible', 'important');
@@ -585,7 +372,7 @@ function createDashboard(data) {
     summaryBlock.style.setProperty('border-left', '4px solid rgba(255, 255, 255, 0.5)', 'important');
     summaryBlock.style.setProperty('border-radius', '4px', 'important');
     summaryBlock.style.setProperty('box-sizing', 'border-box', 'important');
-    
+
     // Also ensure text is visible after a brief delay (to ensure DOM is ready)
     setTimeout(() => {
         const summaryText = summaryBlock.querySelector('.summary-text');
@@ -599,7 +386,7 @@ function createDashboard(data) {
             summaryText.style.setProperty('line-height', '1.75', 'important');
             summaryText.style.setProperty('font-size', '0.98em', 'important');
         }
-        
+
         // Debug: Log summary block status
         const computedStyle = window.getComputedStyle(summaryBlock);
         console.log('Summary block visibility check:', {
@@ -616,13 +403,13 @@ function createDashboard(data) {
     // UX Score Gauge
     const scoreBlock = document.createElement('div');
     scoreBlock.className = 'dashboard-block';
-    
+
     // Ensure score is valid, default to 0 if not found
     const displayScore = (metrics.uxScore && metrics.uxScore > 0) ? metrics.uxScore : 0;
     const scorePercent = (displayScore / 10) * 100;
-    
+
     console.log('UX Score extracted:', metrics.uxScore, 'Display score:', displayScore);
-    
+
     scoreBlock.innerHTML = `
         <h3>UX Score</h3>
         <div class="score-gauge">
@@ -637,12 +424,12 @@ function createDashboard(data) {
         </div>
     `;
     dashboard.appendChild(scoreBlock);
-    
+
     // Ensure score block is visible
     scoreBlock.style.display = 'block';
     scoreBlock.style.visibility = 'visible';
     scoreBlock.style.opacity = '1';
-    
+
     setTimeout(() => {
         if (displayScore > 0) {
             createScoreChart(displayScore);
@@ -693,7 +480,7 @@ function createDashboard(data) {
     if (data.pages_data && data.pages_data.length > 0) {
         const pagesBlock = document.createElement('div');
         pagesBlock.className = 'dashboard-block full-width';
-        
+
         let pagesHTML = '<h3>Pages & Interactions</h3><div class="pages-list">';
         data.pages_data.forEach((page, index) => {
             const shortUrl = page.url.length > 60 ? page.url.substring(0, 60) + '...' : page.url;
@@ -747,9 +534,9 @@ function createDashboard(data) {
     // Issues List
     const issuesListBlock = document.createElement('div');
     issuesListBlock.className = 'dashboard-block';
-    const totalIssues = metrics.brokenButtons + metrics.navigationIssues + 
-                      metrics.accessibilityIssues + metrics.missingLabels + 
-                      metrics.deadEnds + metrics.poorUX;
+    const totalIssues = metrics.brokenButtons + metrics.navigationIssues +
+        metrics.accessibilityIssues + metrics.missingLabels +
+        metrics.deadEnds + metrics.poorUX;
     issuesListBlock.innerHTML = `
         <h3>Issue Breakdown</h3>
         <ul class="issues-list">
@@ -799,7 +586,7 @@ function createDashboard(data) {
 function createScoreChart(score) {
     const canvas = document.getElementById('scoreChart');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     new Chart(ctx, {
         type: 'doughnut',
@@ -899,7 +686,7 @@ function createTimelineChartFromData(pagesData, duration) {
     const maxPoints = Math.min(pagesData.length, 20);
     const labels = pagesData.slice(0, maxPoints).map((_, i) => `Page ${i + 1}`);
     const clicksData = pagesData.slice(0, maxPoints).map(page => page.click_count || 0);
-    
+
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -958,8 +745,8 @@ function createTimelineChartFromData(pagesData, duration) {
 function createTimelineChart(pages, clicks, duration) {
     const ctx = document.getElementById('timelineChart').getContext('2d');
     const timePoints = Math.min(pages, 10);
-    const labels = Array.from({length: timePoints}, (_, i) => `Page ${i + 1}`);
-    const clicksData = Array.from({length: timePoints}, () => 
+    const labels = Array.from({ length: timePoints }, (_, i) => `Page ${i + 1}`);
+    const clicksData = Array.from({ length: timePoints }, () =>
         Math.floor(clicks / timePoints) + Math.floor(Math.random() * 3)
     );
 
@@ -1071,7 +858,7 @@ async function loadReport() {
         // Show dashboard
         const reportContainer = document.getElementById('reportContainer');
         reportContainer.style.display = 'block';
-        
+
         const reportMeta = document.getElementById('reportMeta');
         reportMeta.innerHTML = `
             <strong>URL:</strong> ${data.url || 'N/A'}<br>
@@ -1084,7 +871,7 @@ async function loadReport() {
 
         // Show action buttons
         document.getElementById('actionButtons').style.display = 'flex';
-        
+
         // Update chatbot badge
         if (typeof updateChatbotBadge === 'function') {
             updateChatbotBadge();
@@ -1113,15 +900,15 @@ function downloadPDF() {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
+
     // Set font
     doc.setFont('helvetica');
-    
+
     // Title
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text('CRAWL AI - Analysis Report', 20, 20);
-    
+
     // Meta information
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -1140,26 +927,26 @@ function downloadPDF() {
         doc.text(`Finished: ${new Date(reportData.finished_at).toLocaleString()}`, 20, yPos);
         yPos += 7;
     }
-    
+
     // Report content
     yPos += 5;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('Analysis Report', 20, yPos);
     yPos += 10;
-    
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    
+
     // Split report text into lines that fit the page
     const reportText = reportData.report || 'No report available';
     const maxWidth = 170;
     const lineHeight = 6;
     const pageHeight = 280;
     const startX = 20;
-    
+
     const lines = doc.splitTextToSize(reportText, maxWidth);
-    
+
     lines.forEach((line) => {
         if (yPos > pageHeight) {
             doc.addPage();
@@ -1168,7 +955,7 @@ function downloadPDF() {
         doc.text(line, startX, yPos);
         yPos += lineHeight;
     });
-    
+
     // Save the PDF
     const filename = `CRAWL_AI_Report_${currentRunId || 'report'}.pdf`;
     doc.save(filename);
@@ -1232,17 +1019,17 @@ function resetUI() {
     document.getElementById('stats').style.display = 'none';
     document.getElementById('reportContainer').style.display = 'none';
     document.getElementById('actionButtons').style.display = 'none';
-    
+
     // Reset form
     document.getElementById('testForm').reset();
-    
+
     // Reset status
     const statusIcon = document.getElementById('statusIcon');
     statusIcon.className = 'status-icon running';
     statusIcon.textContent = '...';
     document.getElementById('statusTitle').textContent = 'Running Analysis';
     document.getElementById('progressText').textContent = 'Initializing';
-    
+
     currentRunId = null;
     startTime = null;
     reportData = null;
@@ -1389,10 +1176,10 @@ async function sendChatMessage() {
         }
 
         const data = await response.json();
-        
+
         // Add bot response to chat
         addChatMessage(data.response, 'bot');
-        
+
         // Update chat history
         chatHistory.push({ role: 'user', content: message });
         chatHistory.push({ role: 'assistant', content: data.response });

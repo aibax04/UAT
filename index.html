@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,15 +9,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css?v=2">
 </head>
+
 <body>
+    <div class="background-container">
+        <canvas id="gravityCanvas"></canvas>
+        <div class="background-overlay"></div>
+    </div>
     <div class="landing-page" id="landingPage">
         <div class="hero-section">
             <h1>CRAWL AI</h1>
             <p class="tagline">Intelligent Web Analysis & UX Research Platform</p>
             <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
                 <button class="start-btn" id="startCrawlingBtn">Start Analysis</button>
-                <button class="start-btn" id="liveWorkspaceBtn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">Live Workspace</button>
-                <button class="start-btn" id="scheduledTestingBtn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Scheduled Testing</button>
+                <button class="start-btn" id="liveWorkspaceBtn">Live Workspace</button>
+                <button class="start-btn" id="scheduledTestingBtn">Scheduled Testing</button>
             </div>
         </div>
 
@@ -26,32 +32,38 @@
                 <div class="feature-card">
                     <div class="feature-icon">01</div>
                     <h3>Comprehensive Crawling</h3>
-                    <p>Automatically discovers and crawls all pages, buttons, links, and interactive elements across your entire website with intelligent loop detection and navigation.</p>
+                    <p>Automatically discovers and crawls all pages, buttons, links, and interactive elements across
+                        your entire website with intelligent loop detection and navigation.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">02</div>
                     <h3>AI-Powered Analysis</h3>
-                    <p>Advanced AI models analyze your website's UX/UI using human psychology principles, cognitive load theory, and emotional design patterns to provide actionable insights.</p>
+                    <p>Advanced AI models analyze your website's UX/UI using human psychology principles, cognitive load
+                        theory, and emotional design patterns to provide actionable insights.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">03</div>
                     <h3>Interactive Dashboard</h3>
-                    <p>Visualize your website's performance with animated charts, metrics, user journey predictions, and comprehensive analytics in a beautiful black-and-white interface.</p>
+                    <p>Visualize your website's performance with animated charts, metrics, user journey predictions, and
+                        comprehensive analytics in a beautiful black-and-white interface.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">04</div>
                     <h3>Screenshot Gallery</h3>
-                    <p>Automatically captures screenshots of every page visited, providing visual evidence of your website's structure and design for detailed analysis.</p>
+                    <p>Automatically captures screenshots of every page visited, providing visual evidence of your
+                        website's structure and design for detailed analysis.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">05</div>
                     <h3>Human-Centered Reports</h3>
-                    <p>Receive detailed UX research reports written from a senior UX researcher's perspective, focusing on emotional impact, accessibility, and user experience.</p>
+                    <p>Receive detailed UX research reports written from a senior UX researcher's perspective, focusing
+                        on emotional impact, accessibility, and user experience.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">06</div>
                     <h3>PDF Export</h3>
-                    <p>Download comprehensive PDF reports and screenshot galleries for offline review, presentations, and documentation of your website analysis.</p>
+                    <p>Download comprehensive PDF reports and screenshot galleries for offline review, presentations,
+                        and documentation of your website analysis.</p>
                 </div>
             </div>
         </div>
@@ -63,25 +75,29 @@
                     <div class="workflow-step step-1">
                         <div class="step-number">1</div>
                         <div class="step-title">Input URL</div>
-                        <div class="step-description">Enter your website URL and optional login credentials to begin the analysis process.</div>
+                        <div class="step-description">Enter your website URL and optional login credentials to begin the
+                            analysis process.</div>
                     </div>
                     <div class="workflow-connector connector-1"></div>
                     <div class="workflow-step step-2">
                         <div class="step-number">2</div>
                         <div class="step-title">Intelligent Crawling</div>
-                        <div class="step-description">Our advanced crawler navigates through all pages, discovers interactive elements, and captures screenshots automatically.</div>
+                        <div class="step-description">Our advanced crawler navigates through all pages, discovers
+                            interactive elements, and captures screenshots automatically.</div>
                     </div>
                     <div class="workflow-connector connector-2"></div>
                     <div class="workflow-step step-3">
                         <div class="step-number">3</div>
                         <div class="step-title">AI Analysis</div>
-                        <div class="step-description">Powerful AI models analyze the collected data using UX research principles to generate comprehensive insights.</div>
+                        <div class="step-description">Powerful AI models analyze the collected data using UX research
+                            principles to generate comprehensive insights.</div>
                     </div>
                     <div class="workflow-connector connector-3"></div>
                     <div class="workflow-step step-4">
                         <div class="step-number">4</div>
                         <div class="step-title">Visual Dashboard</div>
-                        <div class="step-description">View your results in an interactive dashboard with charts, metrics, and detailed recommendations.</div>
+                        <div class="step-description">View your results in an interactive dashboard with charts,
+                            metrics, and detailed recommendations.</div>
                     </div>
                 </div>
             </div>
@@ -103,8 +119,9 @@
 
         <div class="cta-section">
             <h2>Ready to Analyze Your Website?</h2>
-            <p>Discover insights about your website's user experience, identify pain points, and get actionable recommendations from our AI-powered analysis platform.</p>
-            <button class="start-btn" onclick="document.getElementById('startCrawlingBtn').click()">Start Your Analysis</button>
+            <p>Discover insights about your website's user experience, identify pain points, and get actionable
+                recommendations from our AI-powered analysis platform.</p>
+            <button class="start-btn" id="ctaStartBtn">Start Your Analysis</button>
         </div>
     </div>
 
@@ -113,7 +130,7 @@
     <div class="form-section" id="formSection">
         <div class="container">
             <button class="back-btn" id="backBtn" style="display: none;">Back</button>
-            
+
             <div class="header">
                 <h1>CRAWL AI</h1>
                 <p>Enter website details to begin analysis</p>
@@ -128,35 +145,21 @@
                 <form id="testForm">
                     <div class="form-group">
                         <label for="url">Website URL</label>
-                        <input 
-                            type="url" 
-                            id="url" 
-                            name="url" 
-                            placeholder="https://example.com" 
-                            required
-                        >
+                        <input type="url" id="url" name="url" placeholder="https://example.com" required>
                     </div>
 
                     <div class="optional-section">
                         <h3>Login Credentials (Optional)</h3>
                         <div class="form-group">
                             <label for="username">Username</label>
-                            <input 
-                                type="text" 
-                                id="username" 
-                                name="username" 
-                                placeholder="Enter username if login required"
-                            >
+                            <input type="text" id="username" name="username"
+                                placeholder="Enter username if login required">
                         </div>
 
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password" 
-                                placeholder="Enter password if login required"
-                            >
+                            <input type="password" id="password" name="password"
+                                placeholder="Enter password if login required">
                         </div>
                     </div>
 
@@ -238,19 +241,15 @@
         <div class="chatbot-messages" id="chatbotMessages">
             <div class="chatbot-message bot-message">
                 <div class="message-content">
-                    <p>Hello! I'm your CRAWL AI assistant. I can help you understand your website analysis report and provide recommendations for improvement.</p>
+                    <p>Hello! I'm your CRAWL AI assistant. I can help you understand your website analysis report and
+                        provide recommendations for improvement.</p>
                     <p class="message-time">Just now</p>
                 </div>
             </div>
         </div>
         <div class="chatbot-input-container">
-            <input 
-                type="text" 
-                id="chatbotInput" 
-                class="chatbot-input" 
-                placeholder="Ask me about your website analysis..."
-                autocomplete="off"
-            >
+            <input type="text" id="chatbotInput" class="chatbot-input"
+                placeholder="Ask me about your website analysis..." autocomplete="off">
             <button class="chatbot-send" id="chatbotSend">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -273,10 +272,11 @@
     </button>
 
     <!-- Scheduled Testing Section -->
-    <div class="scheduled-testing-section" id="scheduledTestingSection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1000; background: #0a0a0a; overflow-y: auto;">
+    <div class="scheduled-testing-section" id="scheduledTestingSection"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1000; background: #0a0a0a; overflow-y: auto;">
         <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 40px 20px;">
             <button class="back-btn" id="scheduledTestingBackBtn" style="margin-bottom: 20px;">← Back</button>
-            
+
             <div class="header">
                 <h1>Scheduled Testing</h1>
                 <p>Automate your tests to run on a schedule</p>
@@ -293,7 +293,8 @@
 
                     <div class="form-group">
                         <label for="scheduleTask">Task Description (Optional)</label>
-                        <textarea id="scheduleTask" name="task_description" placeholder="Describe what the test should do..." rows="3"></textarea>
+                        <textarea id="scheduleTask" name="task_description"
+                            placeholder="Describe what the test should do..." rows="3"></textarea>
                     </div>
 
                     <div class="form-group">
@@ -350,7 +351,8 @@
                             </div>
                             <div style="flex: 1;">
                                 <label for="scheduleIntervalMinutes">Minutes</label>
-                                <input type="number" id="scheduleIntervalMinutes" name="interval_minutes" min="0" value="60">
+                                <input type="number" id="scheduleIntervalMinutes" name="interval_minutes" min="0"
+                                    value="60">
                             </div>
                         </div>
                     </div>
@@ -370,18 +372,17 @@
                     <!-- Email Notification Settings -->
                     <div class="form-group" style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">
                         <h3 style="color: #fff; margin-bottom: 15px; font-size: 16px;">Email Notifications</h3>
-                        
+
                         <div class="form-group">
                             <label for="scheduleNotifyEmail">Notify me at (comma-separated emails)</label>
                             <div style="display: flex; gap: 10px;">
-                                <input type="text" id="scheduleNotifyEmail" name="notify_email" 
-                                       placeholder="email@example.com, another@example.com" 
-                                       style="flex: 1;">
-                                <button type="button" id="testEmailBtn" class="back-btn" 
-                                        style="white-space: nowrap;">Test Email</button>
+                                <input type="text" id="scheduleNotifyEmail" name="notify_email"
+                                    placeholder="email@example.com, another@example.com" style="flex: 1;">
+                                <button type="button" id="testEmailBtn" class="back-btn"
+                                    style="white-space: nowrap;">Test Email</button>
                             </div>
                             <small style="color: #999; font-size: 12px; display: block; margin-top: 5px;">
-                                Optional: Enter email addresses to receive notifications after test completion. 
+                                Optional: Enter email addresses to receive notifications after test completion.
                                 Configure SMTP in .env file (SMTP_USER, SMTP_PASSWORD, etc.)
                             </small>
                             <div id="emailTestResult" style="margin-top: 10px; font-size: 12px;"></div>
@@ -389,20 +390,21 @@
 
                         <div class="form-group">
                             <label style="display: flex; align-items: center; color: #fff; margin-bottom: 10px;">
-                                <input type="checkbox" id="scheduleNotifyOnSuccess" name="notify_on_success" 
-                                       style="margin-right: 8px;">
+                                <input type="checkbox" id="scheduleNotifyOnSuccess" name="notify_on_success"
+                                    style="margin-right: 8px;">
                                 Notify on success
                             </label>
                             <label style="display: flex; align-items: center; color: #fff;">
-                                <input type="checkbox" id="scheduleNotifyOnFailure" name="notify_on_failure" 
-                                       style="margin-right: 8px;">
+                                <input type="checkbox" id="scheduleNotifyOnFailure" name="notify_on_failure"
+                                    style="margin-right: 8px;">
                                 Notify on failure
                             </label>
                         </div>
                     </div>
 
                     <button type="submit" class="start-btn" style="width: 100%;">Create Schedule</button>
-                    <button type="button" id="scheduleFormCancel" class="back-btn" style="width: 100%; margin-top: 10px; display: none;">Cancel</button>
+                    <button type="button" id="scheduleFormCancel" class="back-btn"
+                        style="width: 100%; margin-top: 10px; display: none;">Cancel</button>
                 </form>
             </div>
 
@@ -416,14 +418,15 @@
         </div>
     </div>
 
-    <div class="workspace-section" id="workspaceSection" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1000;">
+    <div class="workspace-section" id="workspaceSection"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1000;">
         <div class="workspace-container">
             <div class="workspace-sidebar">
                 <div class="workspace-header">
                     <h2>Task Control</h2>
                     <button class="workspace-close-btn" id="workspaceCloseBtn">&times;</button>
                 </div>
-                
+
                 <div class="workspace-sidebar-content">
                     <div class="workspace-section-group">
                         <div class="workspace-section-title">SETUP</div>
@@ -433,46 +436,49 @@
                             <button class="workspace-btn" id="loadWorkspaceUrlBtn">Load URL</button>
                         </div>
                     </div>
-                    
+
                     <div class="workspace-section-group">
                         <div class="workspace-section-title">TASK PLANNING</div>
                         <div class="workspace-task-input">
                             <label for="workspaceTaskInput">WHAT DO YOU WANT THE AGENT TO DO?</label>
-                            <textarea id="workspaceTaskInput" placeholder="e.g., Click the login button, fill in username and password, then submit the form"></textarea>
+                            <textarea id="workspaceTaskInput"
+                                placeholder="e.g., Click the login button, fill in username and password, then submit the form"></textarea>
                             <button class="workspace-btn" id="planTasksBtn">Plan Tasks</button>
                         </div>
                     </div>
-                    
+
                     <div class="workspace-section-group">
                         <div class="workspace-section-title">EXECUTION CONTROLS</div>
                         <div class="workspace-controls">
-                            <button class="workspace-btn workspace-btn-primary" id="startExecutionBtn" disabled>Start</button>
+                            <button class="workspace-btn workspace-btn-primary" id="startExecutionBtn"
+                                disabled>Start</button>
                             <button class="workspace-btn" id="pauseExecutionBtn" disabled>Pause</button>
                             <button class="workspace-btn" id="resumeExecutionBtn" disabled>Resume</button>
                             <button class="workspace-btn" id="stopExecutionBtn" disabled>Stop</button>
                         </div>
                     </div>
-                    
+
                     <div class="workspace-section-group workspace-section-group-expand">
                         <div class="workspace-section-title">TASK LIST</div>
                         <div class="workspace-tasks" id="workspaceTasks">
                             <div class="task-list" id="taskList">
-                                </div>
+                            </div>
                         </div>
                     </div>
-                    
+
                     <div class="workspace-section-group">
                         <div class="workspace-section-title">STATUS</div>
                         <div class="workspace-status" id="workspaceStatus">
                             <p>Ready to start</p>
                         </div>
-                        <button type="button" class="workspace-btn workspace-btn-info" id="workspaceAgentStatusBtn" style="margin-top: 12px; width: 100%;">
+                        <button type="button" class="workspace-btn workspace-btn-info" id="workspaceAgentStatusBtn"
+                            style="margin-top: 12px; width: 100%;">
                             📊 Agent Status & Tasks
                         </button>
                     </div>
                 </div>
             </div>
-            
+
             <div class="workspace-main">
                 <div class="workspace-browser-header">
                     <h3>Live Browser Preview</h3>
@@ -489,16 +495,16 @@
             </div>
         </div>
     </div>
-    
+
     <div id="workspaceAgentPopup" class="workspace-agent-popup" style="display: none !important;">
         <div class="workspace-agent-popup-overlay"></div>
-        
+
         <div class="workspace-agent-popup-content">
             <div class="workspace-agent-popup-header">
                 <h3><span class="agent-pulse-icon"></span> AGENT COMMAND CENTER</h3>
                 <button class="workspace-agent-popup-close" id="workspaceAgentPopupClose">&times;</button>
             </div>
-            
+
             <div class="workspace-agent-popup-body">
                 <!-- Left Side: Execution Report -->
                 <div class="workspace-agent-report-panel">
@@ -508,7 +514,7 @@
                             <p>Agent standing by...</p>
                         </div>
                     </div>
-                    
+
                     <div class="workspace-agent-status-section" style="border-bottom: none; padding-bottom: 0;">
                         <h4>Execution Report</h4>
                     </div>
@@ -516,22 +522,20 @@
                         <p class="workspace-agent-empty">No active tasks planned.</p>
                     </div>
                 </div>
-                
+
                 <!-- Right Side: Command Interface -->
                 <div class="workspace-agent-command-panel">
                     <div class="workspace-agent-chat-container">
                         <div id="agentChatMessages" class="workspace-agent-chat-messages">
                             <div class="agent-chat-msg agent-chat-bot">
-                                <p>System initialized. I am ready to assist with task planning and execution monitoring.</p>
+                                <p>System initialized. I am ready to assist with task planning and execution monitoring.
+                                </p>
                             </div>
                         </div>
-                        
+
                         <div class="workspace-agent-chat-input-container">
-                            <input type="text" 
-                                   id="workspaceAgentChatInput" 
-                                   class="workspace-agent-chat-input" 
-                                   placeholder="Command the agent or ask for status..."
-                                   autocomplete="off">
+                            <input type="text" id="workspaceAgentChatInput" class="workspace-agent-chat-input"
+                                placeholder="Command the agent or ask for status..." autocomplete="off">
                             <button id="workspaceAgentChatSend" class="workspace-agent-chat-send">SEND</button>
                         </div>
                     </div>
@@ -542,7 +546,9 @@
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="script.js"></script>
+    <script src="background_3d.js"></script>
     <script src="workspace.js"></script>
     <script src="scheduled_testing.js"></script>
 </body>
+
 </html>
