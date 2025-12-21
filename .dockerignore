@@ -1,0 +1,14 @@
+__pycache__
+venv/
+.env
+.git/
+.gitignore
+*.db
+uat_db/
+logs/
+screenshots/
+reports/
+task.md
+deployment_guide.md
+render.yaml
+README.md

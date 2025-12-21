@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: uat-automation-agent
+    env: docker
+    plan: free
+    buildCommand: docker build -t uat-agent .
+    startCommand: python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    disk:
+      name: uat-data
+      mountPath: /app/uat_db
+      sizeGB: 1

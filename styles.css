@@ -236,176 +236,228 @@ body {
     font-weight: 300;
 }
 
-/* How It Works Section */
+/* 3D Animated Timeline Section - Extreme Graphics Upgrade */
 .how-it-works-section {
-    padding: 100px 20px;
+    padding: 120px 20px;
+    position: relative;
     max-width: 1400px;
     margin: 0 auto;
-    text-align: center;
-}
-
-.workflow-diagram {
-    margin: 60px 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    perspective: 1500px; /* Deeper perspective */
 }
 
 .diagram-container {
-    width: 100%;
-    max-width: 1200px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 0 20px;
+    padding-top: 60px;
     position: relative;
+    transform-style: preserve-3d;
 }
 
-/* Connecting Line */
+/* Energy Beam Line */
 .diagram-container::before {
     content: '';
     position: absolute;
-    top: 40px;
-    /* Adjust based on icon/number height */
+    top: 100px;
     left: 50px;
     right: 50px;
-    height: 1px;
-    background: #333;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
     z-index: 0;
+    transform: translateZ(-50px);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 
+/* Animated Plasma Flow */
+.diagram-container::after {
+    content: '';
+    position: absolute;
+    top: 100px;
+    left: 50px;
+    width: 0;
+    height: 4px;
+    background: linear-gradient(90deg, 
+        #00d2ff, 
+        #3a7bd5, 
+        #00d2ff
+    );
+    background-size: 200% 100%;
+    border-radius: 4px;
+    box-shadow: 
+        0 0 20px rgba(0, 210, 255, 0.6),
+        0 0 40px rgba(0, 210, 255, 0.3);
+    z-index: 0;
+    animation: 
+        timelineFill 3s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+        plasmaFlow 2s linear infinite;
+    transform: translateZ(-49px);
+}
+
+@keyframes timelineFill { to { width: calc(100% - 100px); } }
+@keyframes plasmaFlow { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* Ultra-Premium 3D Glass Cards */
 .workflow-step {
-    position: relative;
-    width: 250px;
-    padding: 20px;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    flex: 1;
+    margin: 0 20px;
+    padding: 40px 30px;
+    background: rgba(10, 10, 12, 0.7); /* Darker, richer base */
     border: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
-    transition: all 0.3s ease;
-    z-index: 1;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    position: relative;
+    z-index: 10;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-style: preserve-3d;
+    box-shadow: 
+        0 30px 60px -12px rgba(0, 0, 0, 0.5),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 20px 40px -10px rgba(255, 255, 255, 0.05);
+    
+    /* Animation Init */
+    opacity: 0;
+    transform: translateY(50px) rotateX(20deg) scale(0.9);
 }
 
+/* Staggered Entry with Bounce */
+.workflow-step.step-1 { animation: stepEnterUltra 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.2s; }
+.workflow-step.step-2 { animation: stepEnterUltra 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.6s; }
+.workflow-step.step-3 { animation: stepEnterUltra 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 1.0s; }
+.workflow-step.step-4 { animation: stepEnterUltra 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 1.4s; }
+
+@keyframes stepEnterUltra {
+    to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0deg) scale(1);
+    }
+}
+
+/* Hover: Levitation & Holographic Glow */
 .workflow-step:hover {
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(20, 20, 20, 0.7);
-    transform: scale(1.05);
-    /* Made subtle and removed !important */
+    transform: translateY(-20px) scale(1.05) rotateX(5deg);
+    background: rgba(20, 20, 25, 0.8);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 
+        0 50px 100px -20px rgba(0, 0, 0, 0.7),
+        0 0 30px rgba(58, 123, 213, 0.2), /* Low blue glow */
+        inset 0 0 20px rgba(255, 255, 255, 0.05);
+    z-index: 100;
 }
 
+/* Reflection Effect (The "Extreme" Part) */
+.workflow-step::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 10%;
+    width: 80%;
+    height: 20px;
+    background: radial-gradient(ellipse at center, rgba(58, 123, 213, 0.4), transparent 70%);
+    opacity: 0;
+    transition: 0.6s;
+    transform: translateZ(-10px);
+    filter: blur(15px);
+}
+
+.workflow-step:hover::after {
+    opacity: 1;
+    bottom: -40px;
+    width: 90%;
+    left: 5%;
+}
+
+/* Step Number Badge - Glowing Orb */
 .step-number {
-    font-size: 2.5em;
-    font-weight: 300;
-    margin-bottom: 15px;
-    color: #ffffff;
-    display: block;
-    background: transparent;
     width: 60px;
-    margin-left: auto;
-    margin-right: auto;
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 auto 25px;
+    position: relative;
+    z-index: 20;
+    transition: all 0.5s ease;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    transform: translateZ(30px); /* Floating above card */
 }
 
+.workflow-step:hover .step-number {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+    transform: translateZ(50px) scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+}
+
+/* Titles & Text */
 .step-title {
-    font-size: 1.1em;
-    font-weight: 400;
+    font-size: 1.25em;
+    font-weight: 600;
     margin-bottom: 15px;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    color: #ffffff;
-    display: block;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    transform: translateZ(20px);
 }
 
 .step-description {
-    font-size: 0.9em;
-    line-height: 1.6;
-    color: #cccccc;
+    font-size: 0.95em;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.7);
+    transform: translateZ(20px);
 }
 
-.workflow-connector {
-    display: none;
-    /* Hide old connectors */
-}
-
-/* Remove 3D animations */
-.workflow-step.step-1,
-.workflow-step.step-2,
-.workflow-step.step-3,
-.workflow-step.step-4 {
-    transform: none;
-    animation: none;
-}
-
-@keyframes connectorPulse {
-
-    0%,
-    100% {
-        opacity: 0.2;
-        transform: translateY(-50%) translateZ(75px) scaleX(1);
-    }
-
-    50% {
-        opacity: 0.5;
-        transform: translateY(-50%) translateZ(100px) scaleX(1.05);
-    }
-}
-
-.workflow-connector::after {
+/* Connector Dot - Cyberpunk Style */
+.workflow-step::before {
     content: '';
     position: absolute;
-    right: -10px;
-    top: -6px;
-    width: 0;
-    height: 0;
-    border-left: 10px solid rgba(255, 255, 255, 0.4);
-    border-top: 6px solid transparent;
-    border-bottom: 6px solid transparent;
-    animation: arrowPulse 2s ease-in-out infinite;
+    top: -50px; /* Connects to the line at top: 100px */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #000;
+    border: 3px solid #3a7bd5;
+    z-index: 5;
+    transition: all 0.4s ease;
+    box-shadow: 0 0 15px rgba(58, 123, 213, 0.5);
 }
 
-@keyframes arrowPulse {
-
-    0%,
-    100% {
-        opacity: 0.3;
-        transform: translateX(0);
-    }
-
-    50% {
-        opacity: 0.7;
-        transform: translateX(5px);
-    }
+/* Connecting Beam from Dot to Card */
+.step-number::before {
+    content: '';
+    position: absolute;
+    top: -42px; /* Reaches up to the dot */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 40px;
+    background: linear-gradient(to bottom, #3a7bd5, transparent);
+    opacity: 0.5;
+    z-index: -1;
 }
 
-/* Horizontal Timeline Connectors - Positioned between steps */
-.connector-1 {
-    left: calc(16.66% + 125px);
-    width: calc(16.66% - 50px);
-    transform: translateY(-50%) translateZ(75px);
+.workflow-step:hover::before {
+    background: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 25px #fff;
+    transform: translateX(-50%) scale(1.2);
 }
 
-.connector-2 {
-    left: calc(50% + 125px);
-    width: calc(16.66% - 50px);
-    transform: translateY(-50%) translateZ(125px);
-}
+/* Remove old stuff */
+.workflow-connector { display: none; }
 
-.connector-3 {
-    left: calc(83.33% + 125px);
-    width: calc(16.66% - 50px);
-    transform: translateY(-50%) translateZ(135px);
-}
-
-/* Enhance connectors on step hover */
-.workflow-step.step-1:hover~.connector-1,
-.workflow-step.step-2:hover~.connector-2,
-.workflow-step.step-3:hover~.connector-3 {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.5));
-    height: 4px;
-    transform: translateY(-50%) translateZ(200px) scaleX(1.1);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-}
 
 /* Prototype Screenshots Section */
 .prototype-screenshots-section {
