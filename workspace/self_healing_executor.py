@@ -7,6 +7,7 @@ from workspace.smart_locator import SmartLocatorEngine, LocatorCandidate
 from workspace.element_fingerprint import ElementFingerprint
 from typing import Dict, Optional, Tuple, List
 import time
+from workspace.chroma_memory import chroma_memory
 
 
 class SelfHealingExecutor:
@@ -72,6 +73,13 @@ class SelfHealingExecutor:
                 
                 # Store successful locator
                 self.smart_locator.record_successful_locator(fingerprint_hash, candidate)
+
+                # Store in Chroma Vector Memory
+                try:
+                    fp = ElementFingerprint.create_fingerprint(element, self.page)
+                    chroma_memory.store_success(element_info, fp, candidate.locator)
+                except Exception as e:
+                    print(f"Error storing vector memory: {e}")
                 
                 return True, metadata
                 
@@ -151,6 +159,13 @@ class SelfHealingExecutor:
                 
                 # Store successful locator
                 self.smart_locator.record_successful_locator(fingerprint_hash, candidate)
+
+                # Store in Chroma Vector Memory
+                try:
+                    fp = ElementFingerprint.create_fingerprint(element, self.page)
+                    chroma_memory.store_success(element_info, fp, candidate.locator)
+                except Exception as e:
+                    print(f"Error storing vector memory: {e}")
                 
                 return True, metadata
                 
@@ -186,22 +201,22 @@ class SelfHealingExecutor:
             metadata['healing_steps'].append(healing_result)
             return False, metadata
     
+    
     def _attempt_healing(self, element_info: Dict, action_type: str, timeout: int, **kwargs) -> Dict:
         """
-        Attempt to heal by finding element using fingerprint.
+        Attempt to heal by finding element using fingerprint or vector memory.
         
         Returns:
             Dict with success, locator, confidence, and details
         """
         try:
-            # Create fingerprint from element info
+            # Standard heuristic fingerprint matching
             fingerprint = {
                 'tag': element_info.get('tag', '*'),
                 'text': element_info.get('text', ''),
                 'attributes': element_info.get('attributes', {})
             }
             
-            # Find element by fingerprint
             match_result = self.smart_locator.find_element_by_fingerprint(fingerprint)
             
             if match_result and match_result.get('element'):
@@ -209,34 +224,40 @@ class SelfHealingExecutor:
                 confidence = match_result.get('confidence', 0.70)
                 
                 # Validate context
-                if not self._validate_element_context(element, action_type):
-                    return {
-                        'success': False,
-                        'reason': 'Element found but context validation failed'
-                    }
+                if self._validate_element_context(element, action_type):
+                    return self._finalize_healing(element, action_type, timeout, confidence, 'fingerprint_matching', **kwargs)
+
+            # --- ChromaDB Vector Healing ---
+            if chroma_memory.is_available():
+                if self.on_update_callback:
+                    self.on_update_callback({
+                        'type': 'healing_progress',
+                        'message': 'Heuristic matching failed, trying Vector Memory...'
+                    })
                 
-                # Execute action
-                if action_type == 'click':
-                    element.click(timeout=timeout)
-                elif action_type == 'fill':
-                    text = kwargs.get('text', '')
-                    element.fill('', timeout=2000)
-                    element.fill(text, timeout=timeout)
-                
-                # Create actual fingerprint for storage
-                actual_fingerprint = ElementFingerprint.create_fingerprint(element, self.page)
-                
-                return {
-                    'success': True,
-                    'locator': f'fingerprint:{actual_fingerprint["hash"]}',
-                    'confidence': confidence,
-                    'fingerprint': actual_fingerprint,
-                    'method': 'fingerprint_matching'
-                }
+                # Scan page for candidates
+                candidates = self._scan_page_candidates()
+                if candidates:
+                    candidate_fps = [c[1] for c in candidates]
+                    best_idx, score = chroma_memory.find_best_candidate(element_info, candidate_fps)
+                    
+                    if best_idx is not None and score > 0.6: # Threshold
+                        element = candidates[best_idx][0]
+                        
+                        # Validate context
+                        if self._validate_element_context(element, action_type):
+                            return self._finalize_healing(
+                                element, 
+                                action_type, 
+                                timeout, 
+                                max(0.6, score), 
+                                'vector_embedding',
+                                **kwargs
+                            )
             
             return {
                 'success': False,
-                'reason': 'Could not find element using fingerprint matching'
+                'reason': 'Could not find element using fingerprint or vector matching'
             }
             
         except Exception as e:
@@ -244,7 +265,66 @@ class SelfHealingExecutor:
                 'success': False,
                 'reason': f'Healing error: {str(e)}'
             }
-    
+
+    def _finalize_healing(self, element, action_type, timeout, confidence, method, **kwargs):
+        """Execute action on healed element and return success dict"""
+        try:
+            # Execute action
+            if action_type == 'click':
+                element.click(timeout=timeout)
+            elif action_type == 'fill':
+                text = kwargs.get('text', '')
+                element.fill('', timeout=2000)
+                element.fill(text, timeout=timeout)
+            
+            # Create actual fingerprint for storage
+            actual_fingerprint = ElementFingerprint.create_fingerprint(element, self.page)
+            
+            # Store in Chroma
+            try:
+                chroma_memory.store_success(element_info, actual_fingerprint, f"healed:{method}")
+            except Exception as e:
+                print(f"Error storing healed memory: {e}")
+            
+            return {
+                'success': True,
+                'locator': f'healed:{method}',
+                'confidence': confidence,
+                'fingerprint': actual_fingerprint,
+                'method': method
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'reason': f'Action failed on healed element: {str(e)}'
+            }
+
+    def _scan_page_candidates(self) -> List[Tuple[ElementHandle, Dict]]:
+        """Scan page for interactive candidates and their fingerprints"""
+        candidates = []
+        try:
+            # Get all interactive elements
+            # Limit search to body to avoid grabbing weird stuff
+            elements = self.page.query_selector_all('button, a, input:not([type="hidden"]), [role="button"], [role="link"], select, textarea')
+            
+            # Limit to avoiding perf kill if page is huge
+            # Prefer visible ones
+            
+            count = 0
+            for el in elements:
+                try:
+                    if count > 50: break
+                    if el.is_visible():
+                        fp = ElementFingerprint.create_fingerprint(el, self.page)
+                        candidates.append((el, fp))
+                        count += 1
+                except:
+                    pass
+        except Exception as e:
+            print(f"Error scanning candidates: {e}")
+            pass
+        return candidates
+
     def _validate_element_context(self, element: ElementHandle, action_type: str) -> bool:
         """
         Validate element is ready for action (visible, enabled, etc.).
@@ -286,7 +366,7 @@ class SelfHealingExecutor:
                     const centerX = rect.left + rect.width / 2;
                     const centerY = rect.top + rect.height / 2;
                     const elementAtPoint = document.elementFromPoint(centerX, centerY);
-                    return elementAtPoint !== el && elementAtPoint !== null;
+                    return elementAtPoint !== el && elementAtPoint !== null && !el.contains(elementAtPoint);
                 }
             ''')
             
@@ -300,7 +380,7 @@ class SelfHealingExecutor:
                             const centerX = rect.left + rect.width / 2;
                             const centerY = rect.top + rect.height / 2;
                             const elementAtPoint = document.elementFromPoint(centerX, centerY);
-                            return elementAtPoint !== el && elementAtPoint !== null;
+                            return elementAtPoint !== el && elementAtPoint !== null && !el.contains(elementAtPoint);
                         }
                     ''')
                 except:
