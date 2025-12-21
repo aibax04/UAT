@@ -85,6 +85,12 @@ def run_test_async(run_id, app_name, start_url, username=None, password=None):
         active_runs[run_id]['progress'] = f'Error: {str(e)}'
         active_runs[run_id]['error'] = str(e)
 
+
+@app.route('/')
+def index():
+    """Serve the main application page"""
+    return send_file('index.html')
+
 @app.route('/api/start-test', methods=['POST'])
 def start_test():
     """Start a new UX/QA test"""
