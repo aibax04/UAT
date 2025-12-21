@@ -18,11 +18,35 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
+
+def init_db_if_needed():
+    """Initialize the database if uat.db doesn't exist or tables are missing"""
+    if not os.path.exists('uat.db'):
+        print("Database not found. Initializing...")
+        try:
+            with open('schema.sql', 'r') as f:
+                schema = f.read()
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.executescript(schema)
+            conn.commit()
+            conn.close()
+            print("Database initialized successfully.")
+        except Exception as e:
+            print(f"Error initializing database: {e}")
+
+# Initialize DB before starting scheduler
+init_db_if_needed()
+
 # Initialize scheduler service on app startup
 scheduler_service = get_scheduler_service()
 scheduler_service.start()
-# Load existing schedules from database
-scheduler_service.load_existing_schedules()
+try:
+    # Load existing schedules from database
+    scheduler_service.load_existing_schedules()
+except Exception as e:
+    print(f"Warning: Failed to load schedules: {e}")
+
 
 active_runs = {}
 
