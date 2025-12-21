@@ -145,6 +145,8 @@ class SchedulerService:
                 "task_description": task_description  # Optional task hint
             })
             
+            report = result.get('report', '')
+            
             # Update status to success
             cursor.execute("""
                 UPDATE scheduled_tests 
@@ -156,7 +158,7 @@ class SchedulerService:
             logger.info(f"Scheduled test {schedule_id} completed successfully")
             
             # Send email notification if configured (non-blocking)
-            SchedulerService._send_notification_async(schedule_id, 'success', site_url, task_description, None)
+            SchedulerService._send_notification_async(schedule_id, 'success', site_url, task_description, None, report)
             
         except Exception as e:
             # Update status to failed
@@ -174,13 +176,13 @@ class SchedulerService:
                 logger.error(f"Error updating failed status: {update_error}")
             
             # Send email notification if configured (non-blocking)
-            SchedulerService._send_notification_async(schedule_id, 'failed', site_url, task_description, error_msg)
+            SchedulerService._send_notification_async(schedule_id, 'failed', site_url, task_description, error_msg, None)
         
         finally:
             conn.close()
     
     @staticmethod
-    def _send_notification_async(schedule_id: int, status: str, site_url: str, task_description: str, error: Optional[str]):
+    def _send_notification_async(schedule_id: int, status: str, site_url: str, task_description: str, error: Optional[str], report: Optional[str] = None):
         """
         Send email notification asynchronously (non-blocking).
         This method is called after test completion and doesn't block the scheduler.
@@ -202,7 +204,7 @@ class SchedulerService:
                 # Get notification settings
                 try:
                     cursor.execute("""
-                        SELECT notify_email, notify_on_success, notify_on_failure
+                        SELECT notify_email
                         FROM scheduled_tests
                         WHERE id = ?
                     """, (schedule_id,))
@@ -210,7 +212,7 @@ class SchedulerService:
                     logger.error(f"Error querying notification settings: {e}")
                     # Try with fallback if columns don't exist
                     cursor.execute("""
-                        SELECT notify_email, notify_on_success, notify_on_failure
+                        SELECT notify_email
                         FROM scheduled_tests
                         WHERE id = ?
                     """, (schedule_id,))
@@ -221,24 +223,12 @@ class SchedulerService:
                     conn.close()
                     return
                 
-                notify_email, notify_on_success, notify_on_failure = row
+                notify_email = row[0]
                 
-                # Convert SQLite integers to boolean (0/1 -> False/True)
-                notify_on_success = bool(notify_on_success) if notify_on_success is not None else False
-                notify_on_failure = bool(notify_on_failure) if notify_on_failure is not None else False
+                logger.info(f"Notification settings for schedule {schedule_id}: email={notify_email}")
                 
-                logger.info(f"Notification settings for schedule {schedule_id}: email={notify_email}, on_success={notify_on_success}, on_failure={notify_on_failure}")
-                
-                # Check if notification should be sent
-                should_notify = False
-                if status == 'success' and notify_on_success:
-                    should_notify = True
-                    logger.info(f"Notification triggered: success status and notify_on_success=True")
-                elif status == 'failed' and notify_on_failure:
-                    should_notify = True
-                    logger.info(f"Notification triggered: failed status and notify_on_failure=True")
-                else:
-                    logger.info(f"Notification not triggered: status={status}, notify_on_success={notify_on_success}, notify_on_failure={notify_on_failure}")
+                # Check if notification should be sent - ALWAYS send if email exists
+                should_notify = True
                 
                 if not should_notify:
                     logger.info(f"Skipping notification: should_notify=False")
@@ -276,6 +266,7 @@ class SchedulerService:
                     'execution_time': execution_time,
                     'duration': 'N/A',  # Could be calculated if needed
                     'error': error[:500] if error else None,
+                    'report': report,
                     'schedule_id': schedule_id
                 }
                 
@@ -379,8 +370,9 @@ class SchedulerService:
                 INSERT INTO scheduled_tests (
                     site_url, task_description, frequency, schedule_time,
                     interval_hours, interval_minutes, days_of_week,
-                    schedule_date, enabled, status, created_at, app_name
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    schedule_date, enabled, status, created_at, app_name,
+                    notify_email, notify_on_success, notify_on_failure
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 schedule_data['site_url'],
                 schedule_data.get('task_description', ''),
@@ -393,7 +385,10 @@ class SchedulerService:
                 schedule_data.get('enabled', True),
                 'pending',
                 datetime.utcnow().isoformat(),
-                app_name
+                app_name,
+                schedule_data.get('notify_email'),
+                schedule_data.get('notify_on_success', False),
+                schedule_data.get('notify_on_failure', False)
             ))
             
             schedule_id = cursor.lastrowid

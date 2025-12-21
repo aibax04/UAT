@@ -638,7 +638,8 @@ def test_email_notification():
             'task_description': 'Test email notification',
             'status': 'success',
             'execution_time': datetime.utcnow().isoformat(),
-            'duration': '1m 23s'
+            'duration': '1m 23s',
+            'report': "This is a sample analysis report.\n\nKey Findings:\n1. Page load time is excellent (0.8s).\n2. Accessibility score is 95/100.\n3. Mobile responsiveness is verified.\n\nRecommendations:\n- Consider optimizing image sizes further."
         }
         
         success = notifier.send_test_notification(test_email, summary, 'success')

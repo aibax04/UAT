@@ -61,6 +61,7 @@ class EmailNotifier:
                 - execution_time: str (ISO format)
                 - duration: str (optional)
                 - error: str (optional)
+                - report: str (optional)
                 - schedule_id: int (optional)
             notify_type: Type of notification ('success', 'failure', 'completion')
         
@@ -176,6 +177,7 @@ class EmailNotifier:
         execution_time = summary.get('execution_time', 'Unknown')
         duration = summary.get('duration', 'N/A')
         error = summary.get('error', '')
+        report = summary.get('report', '')
         
         # Format execution time
         try:
@@ -212,6 +214,9 @@ Duration: {duration}
             text_body += f"❌ Test failed.\n\n"
             if error:
                 text_body += f"Error Details:\n{error}\n\n"
+        
+        if report:
+            text_body += f"Analysis Report Summary:\n{report[:2000]}...\n\n"
         
         text_body += "---\n"
         text_body += "This is an automated notification from your testing platform.\n"
@@ -330,6 +335,16 @@ Duration: {duration}
             <div class="info-value">{duration}</div>
         </div>
         
+"""
+        
+        if report:
+            # Format report for HTML (convert newlines to <br> or wrap in pre)
+            formatted_report = report[:3000].replace('\n', '<br>')
+            html_body += f"""
+        <div class="info-row" style="background: white; border-left: 3px solid #10b981;">
+            <div class="info-label">Analysis Summary</div>
+            <div class="info-value" style="font-size: 14px; white-space: pre-wrap;">{report[:3000]}</div>
+        </div>
 """
         
         if status == 'failed' and error:
