@@ -6,6 +6,12 @@ Implements persistent agent execution loop with real-time updates.
 import time
 import threading
 from workspace.task_queue import TaskQueue
+try:
+    from db import get_db
+except ImportError:
+    import sqlite3
+    def get_db():
+        return sqlite3.connect('user_data.db')
 
 
 class TaskExecutor:
@@ -22,6 +28,11 @@ class TaskExecutor:
         self.should_stop = False
         self.execution_thread = None
         self.lock = threading.Lock()
+        
+        # User Interaction & Memory
+        self.input_event = threading.Event()
+        self.waiting_for_input = False
+        self.provided_input = None
     
     def set_tasks(self, tasks):
         """Set the task list to execute (adds to queue)"""
@@ -233,11 +244,60 @@ class TaskExecutor:
                     'message': step_description
                 })
             
+            # INTELLIGENT FILL PRE-PROCESSING
+            if action_type == 'fill':
+                text = task.get('text', '')
+                field_key = task.get('field_id') or description.replace('Fill ', '').replace('Enter ', '').lower()
+                
+                # If value matches "ASK_USER" placeholder or is missing/placeholder-like for a required field
+                # Heuristic: if text is uppercase "ASK_USER" or empty
+                if text == 'ASK_USER' or not text:
+                    # 1. Check Knowledge Base
+                    found_value = self._get_from_knowledge_base(field_key)
+                    
+                    if found_value:
+                        task['text'] = found_value
+                        if self.on_task_update_callback:
+                            self.on_task_update_callback({
+                                'type': 'task_update',
+                                'task': task,
+                                'message': f"Auto-filled '{field_key}' from memory"
+                            })
+                    else:
+                        # 2. Ask User
+                        if self.on_task_update_callback:
+                            self.on_task_update_callback({
+                                'type': 'request_input',
+                                'session_id': self.browser_session.session_id,
+                                'task_id': task.get('id'),
+                                'field': field_key,
+                                'description': description,
+                                'message': f"Please provide value for: {field_key}"
+                            })
+                        
+                        # Wait for input
+                        self.waiting_for_input = True
+                        self.input_event.clear()
+                        self.is_paused = True # Pause loop
+                        
+                        print(f"Waiting for input for {field_key}...")
+                        self.input_event.wait()
+                        
+                        # Input received
+                        text = self.provided_input
+                        self.waiting_for_input = False
+                        self.is_paused = False
+                        
+                        # 3. Store in Knowledge Base (Learning)
+                        if text:
+                            self._save_to_knowledge_base(field_key, text)
+                            task['text'] = text
+
             # Execute action with detailed description
             success = self.browser_session.execute_action(
                 action_type,
                 selector=task.get('selector'),
-                text=task.get('text'),
+                text=task.get('text'), # Updated text
                 url=task.get('url'),
                 duration=task.get('duration', 1),
                 description=description,
@@ -279,6 +339,48 @@ class TaskExecutor:
                     'message': f'Error: {str(e)}'
                 })
             return False
+
+    def provide_input(self, value):
+        """Provide input for a waiting task"""
+        if self.waiting_for_input:
+            self.provided_input = value
+            self.input_event.set()
+            return True
+        return False
+
+    def _get_from_knowledge_base(self, key):
+        """Retrieve value from user knowledge base (context=default for now)"""
+        try:
+            # Connect to user_data.db (assuming it's in root)
+            conn = sqlite3.connect('user_data.db')
+            cursor = conn.cursor()
+            # Try exact match on key
+            cursor.execute("SELECT value FROM user_knowledge WHERE key = ? ORDER BY last_updated DESC LIMIT 1", (key,))
+            row = cursor.fetchone()
+            conn.close()
+            if row:
+                return row[0]
+            
+            # TODO: Fuzzy matching could be added here
+            return None
+        except Exception as e:
+            print(f"DB Read Error: {e}")
+            return None
+
+    def _save_to_knowledge_base(self, key, value):
+        """Save value to user knowledge base"""
+        try:
+            conn = sqlite3.connect('user_data.db')
+            cursor = conn.cursor()
+            # Upsert
+            cursor.execute("""
+                INSERT OR REPLACE INTO user_knowledge (key, value, type, last_updated)
+                VALUES (?, ?, 'user_input', CURRENT_TIMESTAMP)
+            """, (key, value))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"DB Write Error: {e}")
     
     def add_task(self, task):
         """Add a single task to the queue (for dynamic task addition)"""

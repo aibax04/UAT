@@ -465,6 +465,23 @@ def stop_execution(session_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/workspace/<session_id>/input', methods=['POST'])
+def provide_input(session_id):
+    """Provide input for a waiting task"""
+    data = request.json
+    value = data.get('value')
+    if not value:
+        return jsonify({'error': 'Value is required'}), 400
+    
+    try:
+        success = workspace_manager.provide_input(session_id, value)
+        if success:
+            return jsonify({'message': 'Input received'})
+        else:
+            return jsonify({'error': 'Failed to provide input or session not waiting'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/workspace/<session_id>/status', methods=['GET'])
 def get_session_status(session_id):
     """Get session status"""

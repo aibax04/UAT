@@ -19,7 +19,7 @@ class TaskPlanner:
             self.model = None
             print("Warning: GEMINI_API_KEY not found. Task planning will use fallback.")
     
-    def plan_tasks(self, instruction, current_url=None):
+    def plan_tasks(self, instruction, current_url=None, form_schema=None):
         """Convert natural language instruction into task list"""
         if not instruction or not instruction.strip():
             return []
@@ -29,37 +29,55 @@ class TaskPlanner:
             return self._fallback_plan(instruction)
         
         try:
+            # Prepare form context for prompt
+            form_context = ""
+            if form_schema:
+                fields_info = []
+                for form in form_schema.get('forms', []):
+                    for field in form.get('fields', []):
+                        if field.get('type') not in ['hidden', 'submit', 'button', 'reset']:
+                            label = field.get('label') or field.get('name') or field.get('placeholder') or 'Unnamed Field'
+                            fields_info.append(f"- Field: '{label}' (Type: {field.get('type')}, Name: {field.get('name')}, Required: {field.get('required')})")
+                
+                if fields_info:
+                    form_context = "\nDETECTED FORM FIELDS ON PAGE:\n" + "\n".join(fields_info) + "\n\nINSTRUCTION: Use these exact fields to create 'fill' tasks. If the user instruction doesn't provide a value for a required field, set the text to 'ASK_USER'."
+
             # Build prompt for task planning
             prompt = f"""You are a task planning agent. Break down the following user instruction into a sequential list of executable browser tasks.
 
 User Instruction: {instruction}
 Current URL: {current_url or 'Not specified'}
+{form_context}
 
 For each task, provide:
 - id: unique number (1, 2, 3...)
 - name: short descriptive name
 - description: detailed description of what to do
 - action_type: one of [click, fill, navigate, wait, scroll]
-- selector: CSS selector or description of element (if applicable)
-- text: text to fill (if action_type is 'fill')
+- selector: CSS selector or description of element (if applicable). Use the detected field attributes if available.
+- text: text to fill (if action_type is 'fill'). Use 'ASK_USER' if value is unknown/missing for a required field.
 - url: URL to navigate to (if action_type is 'navigate')
+- field_id: (Optional) The detected name/id of the field for tracking.
 
 Return ONLY a valid JSON array of tasks. Example:
 [
   {{
     "id": 1,
-    "name": "Click login button",
-    "description": "Find and click the login button on the page",
-    "action_type": "click",
-    "selector": "button[type='submit'], a[href*='login'], .login-btn"
+    "name": "Fill Name",
+    "description": "Enter name in the Name field",
+    "action_type": "fill",
+    "selector": "input[name='name']",
+    "text": "John Doe",
+    "field_id": "name"
   }},
   {{
     "id": 2,
-    "name": "Fill username",
-    "description": "Enter username in the username field",
+    "name": "Fill Age",
+    "description": "Enter age",
     "action_type": "fill",
-    "selector": "input[name='username'], input[type='text']#username",
-    "text": "testuser"
+    "selector": "input[name='age']",
+    "text": "ASK_USER",
+    "field_id": "age"
   }}
 ]
 

@@ -9,50 +9,50 @@ let currentSessionId = null;
 let currentTasks = [];
 
 // Make openAgentStatusPopup globally accessible - defined immediately
-window.openAgentStatusPopup = function(e) {
+window.openAgentStatusPopup = function (e) {
     if (e) {
         e.preventDefault();
         e.stopPropagation();
     }
-    
+
     // CRITICAL: Only allow popup when workspace is visible
     const workspaceSection = document.getElementById('workspaceSection');
     if (!workspaceSection || workspaceSection.style.display === 'none') {
         console.warn('Workspace is not active. Popup can only be opened from workspace.');
         return false;
     }
-    
+
     const agentPopup = document.getElementById('workspaceAgentPopup');
     const button = e ? e.target.closest('button') : document.getElementById('workspaceAgentStatusBtn');
-    
+
     if (agentPopup && button) {
         console.log('Opening agent status popup');
-        
+
         const popupContent = agentPopup.querySelector('.workspace-agent-popup-content');
-        
+
         if (popupContent) {
             // Center the popup on the screen
             const popupWidth = 900; // Match CSS width (two panels)
             const popupHeight = Math.min(600, window.innerHeight * 0.85); // Max 85vh
-            
+
             const centerX = (window.innerWidth - popupWidth) / 2;
             const centerY = (window.innerHeight - popupHeight) / 2;
-            
+
             // Ensure popup stays within viewport bounds
             const topPosition = Math.max(20, Math.min(centerY, window.innerHeight - popupHeight - 20));
             const leftPosition = Math.max(20, Math.min(centerX, window.innerWidth - popupWidth - 20));
-            
+
             popupContent.style.top = topPosition + 'px';
             popupContent.style.left = leftPosition + 'px';
             popupContent.style.right = 'auto';
             popupContent.style.bottom = 'auto';
             popupContent.style.transform = 'none';
         }
-        
+
         agentPopup.style.display = 'flex';
         agentPopup.classList.add('active');
         document.body.style.overflow = 'hidden';
-        
+
         // Call updateAgentStatusPopup if it exists
         if (typeof updateAgentStatusPopup === 'function') {
             updateAgentStatusPopup();
@@ -69,14 +69,14 @@ window.openAgentStatusPopup = function(e) {
 const WORKSPACE_API_URL = (typeof API_URL !== 'undefined') ? API_URL : window.location.origin;
 
 // Initialize workspace when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Ensure agent popup is hidden on page load
     const agentPopup = document.getElementById('workspaceAgentPopup');
     if (agentPopup) {
         agentPopup.style.display = 'none';
         agentPopup.classList.remove('active');
     }
-    
+
     initWorkspace();
 });
 
@@ -90,7 +90,7 @@ function initWorkspace() {
     // Workspace button click handler
     const liveWorkspaceBtn = document.getElementById('liveWorkspaceBtn');
     if (liveWorkspaceBtn) {
-        liveWorkspaceBtn.addEventListener('click', function() {
+        liveWorkspaceBtn.addEventListener('click', function () {
             showWorkspace();
         });
     }
@@ -98,7 +98,7 @@ function initWorkspace() {
     // Close workspace button
     const workspaceCloseBtn = document.getElementById('workspaceCloseBtn');
     if (workspaceCloseBtn) {
-        workspaceCloseBtn.addEventListener('click', function() {
+        workspaceCloseBtn.addEventListener('click', function () {
             hideWorkspace();
         });
     }
@@ -133,7 +133,7 @@ function initWorkspace() {
     if (stopExecutionBtn) {
         stopExecutionBtn.addEventListener('click', stopExecution);
     }
-    
+
     // Agent Status Popup - attach handlers
     attachAgentStatusPopupHandlers();
 }
@@ -145,22 +145,22 @@ function attachAgentStatusPopupHandlers() {
     if (!workspaceSection || workspaceSection.style.display === 'none') {
         return; // Don't attach handlers if workspace is not visible
     }
-    
+
     const agentStatusBtn = document.getElementById('workspaceAgentStatusBtn');
     const agentPopup = document.getElementById('workspaceAgentPopup');
     const agentPopupClose = document.getElementById('workspaceAgentPopupClose');
-    
+
     console.log('Attaching agent status popup handlers...', { agentStatusBtn, agentPopup });
-    
+
     // Ensure popup is hidden by default
     if (agentPopup) {
         agentPopup.style.display = 'none';
         agentPopup.classList.remove('active');
     }
-    
+
     if (agentStatusBtn && agentPopup) {
         // Use event delegation to ensure it works
-        agentStatusBtn.onclick = function(e) {
+        agentStatusBtn.onclick = function (e) {
             e.preventDefault();
             e.stopPropagation();
             console.log('Agent status button clicked - opening popup');
@@ -171,47 +171,47 @@ function attachAgentStatusPopupHandlers() {
     } else {
         console.warn('Agent status button or popup not found');
     }
-    
+
     if (agentPopupClose && agentPopup) {
         const closePopup = () => {
             agentPopup.style.display = 'none';
             agentPopup.classList.remove('active');
             document.body.style.overflow = '';
         };
-        
+
         agentPopupClose.addEventListener('click', closePopup);
-        
+
         // Close on overlay click
         const overlay = agentPopup.querySelector('.workspace-agent-popup-overlay');
         if (overlay) {
             overlay.addEventListener('click', closePopup);
         }
-        
+
         // Close on Escape key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && agentPopup.classList.contains('active')) {
                 closePopup();
             }
         });
     }
-    
+
     // Agent Chat Integration
     const agentChatInput = document.getElementById('workspaceAgentChatInput');
     const agentChatSend = document.getElementById('workspaceAgentChatSend');
-    
+
     if (agentChatInput && agentChatSend) {
         const sendAgentMessage = () => {
             const message = agentChatInput.value.trim();
             if (!message) return;
-            
+
             // Add user message to chat
             addAgentChatMessage(message, 'user');
             agentChatInput.value = '';
-            
+
             // Send to chatbot API with task context
             sendAgentChatMessage(message);
         };
-        
+
         agentChatSend.addEventListener('click', sendAgentMessage);
         agentChatInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -236,7 +236,7 @@ function showWorkspace() {
     if (formSection) {
         formSection.style.display = 'none';
     }
-    
+
     // Initialize placeholder class if placeholder exists
     if (preview) {
         const placeholder = preview.querySelector('.workspace-placeholder');
@@ -246,12 +246,12 @@ function showWorkspace() {
             preview.classList.remove('has-placeholder');
         }
     }
-    
+
     // Re-attach agent status popup handlers when workspace is shown
     setTimeout(() => {
         attachAgentStatusPopupHandlers();
     }, 200);
-    
+
     // Focus on URL input
     const urlInput = document.getElementById('workspaceUrl');
     if (urlInput) {
@@ -277,16 +277,16 @@ function hideWorkspace() {
     if (landingPage) {
         landingPage.style.display = 'block';
     }
-    
+
     // Disconnect WebSocket if connected
     if (workspaceSocket) {
         workspaceSocket.disconnect();
         workspaceSocket = null;
     }
-    
+
     currentSessionId = null;
     currentTasks = [];
-    
+
     // Reset UI
     resetWorkspaceUI();
 }
@@ -297,37 +297,37 @@ function resetWorkspaceUI() {
     const taskInput = document.getElementById('workspaceTaskInput');
     if (urlInput) urlInput.value = '';
     if (taskInput) taskInput.value = '';
-    
+
     // Clear tasks
     const taskList = document.getElementById('taskList');
     if (taskList) taskList.innerHTML = '';
-    
+
     // Reset buttons
     const planTasksBtn = document.getElementById('planTasksBtn');
     const startExecutionBtn = document.getElementById('startExecutionBtn');
     const pauseExecutionBtn = document.getElementById('pauseExecutionBtn');
     const resumeExecutionBtn = document.getElementById('resumeExecutionBtn');
     const stopExecutionBtn = document.getElementById('stopExecutionBtn');
-    
+
     if (planTasksBtn) planTasksBtn.disabled = true;
     if (startExecutionBtn) startExecutionBtn.disabled = true;
     if (pauseExecutionBtn) pauseExecutionBtn.disabled = true;
     if (resumeExecutionBtn) resumeExecutionBtn.disabled = true;
     if (stopExecutionBtn) stopExecutionBtn.disabled = true;
-    
+
     // Reset preview
     const preview = document.getElementById('workspaceBrowserPreview');
     if (preview) {
         preview.innerHTML = '<div class="workspace-placeholder"><p>Enter a URL and click "Load URL" to start</p></div>';
         preview.classList.add('has-placeholder');
     }
-    
+
     // Reset URL display
     const urlDisplay = document.getElementById('workspaceBrowserUrl');
     if (urlDisplay) {
         urlDisplay.textContent = 'No URL loaded';
     }
-    
+
     updateStatus('Ready to start');
 }
 
@@ -336,7 +336,7 @@ function connectWebSocket(sessionId) {
     if (workspaceSocket) {
         workspaceSocket.disconnect();
     }
-    
+
     // Connect to WebSocket
     workspaceSocket = io(WORKSPACE_API_URL, {
         transports: ['websocket', 'polling'],
@@ -345,19 +345,19 @@ function connectWebSocket(sessionId) {
         reconnectionDelay: 1000
     });
 
-    workspaceSocket.on('connect', function() {
+    workspaceSocket.on('connect', function () {
         console.log('WebSocket connected');
         updateStatus('Connected to workspace server');
         // Join session room
         workspaceSocket.emit('join_session', { session_id: sessionId });
     });
 
-    workspaceSocket.on('disconnect', function() {
+    workspaceSocket.on('disconnect', function () {
         console.log('WebSocket disconnected');
         updateStatus('Disconnected from server');
     });
 
-    workspaceSocket.on('connect_error', function(error) {
+    workspaceSocket.on('connect_error', function (error) {
         console.error('WebSocket connection error:', error);
         updateStatus('Connection error. Retrying...');
     });
@@ -395,7 +395,7 @@ function handleBrowserUpdate(data) {
             const currentSrc = iframe.src;
             const baseUrl = data.url.split('?')[0].split('#')[0];  // Get base URL without params
             const currentBaseUrl = currentSrc.split('?')[0].split('#')[0];
-            
+
             if (currentBaseUrl !== baseUrl || data.force_reload) {
                 // Different URL or forced reload - update immediately
                 iframe.src = data.url;
@@ -407,9 +407,9 @@ function handleBrowserUpdate(data) {
                 iframe.src = data.url + separator + '_t=' + Date.now();
                 console.log('Iframe refreshed (same URL):', data.url);
             }
-            
+
             // Ensure iframe loads and is scrollable
-            iframe.onload = function() {
+            iframe.onload = function () {
                 try {
                     // Try to access iframe content to ensure it loaded
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
@@ -424,12 +424,12 @@ function handleBrowserUpdate(data) {
             if (urlDisplay) {
                 urlDisplay.textContent = data.url;
             }
-            
+
             // Update current action display
             const currentActionEl = document.getElementById('workspaceCurrentAction');
             if (currentActionEl) {
                 if (data.action || data.task_name) {
-                    const actionText = data.task_name 
+                    const actionText = data.task_name
                         ? `[${data.task_name}] ${data.action || ''}`
                         : (data.action || '');
                     currentActionEl.textContent = actionText;
@@ -456,7 +456,7 @@ function handleBrowserUpdate(data) {
         const actionDesc = data.description || data.action || 'Executing action...';
         const taskName = data.task_name ? `[${data.task_name}] ` : '';
         updateStatus(`${taskName}${actionDesc}`);
-        
+
         // Update current action display
         const currentActionEl = document.getElementById('workspaceCurrentAction');
         if (currentActionEl) {
@@ -470,7 +470,7 @@ function handleBrowserUpdate(data) {
         }
         const actionDesc = data.description || data.action || 'Action';
         updateStatus(`Completed: ${actionDesc}`);
-        
+
         // Clear current action after a delay
         const currentActionEl = document.getElementById('workspaceCurrentAction');
         if (currentActionEl) {
@@ -489,7 +489,7 @@ function handleBrowserUpdate(data) {
                 preview.classList.remove('button-click-indicator');
             }, 1000);
         }
-        
+
         // Update status with button click info
         let statusMsg = `✓ Button Clicked: ${data.description || 'Element'}`;
         if (data.locator_strategy) {
@@ -502,18 +502,18 @@ function handleBrowserUpdate(data) {
             statusMsg += ` [${(data.confidence * 100).toFixed(0)}% confidence]`;
         }
         updateStatus(statusMsg);
-        
+
         // Show notification
         console.log('Button clicked:', data);
     } else if (data.type === 'execution_metadata') {
         // Display execution metadata (locator used, healing, confidence)
         const metadata = data.metadata;
         let statusMsg = data.description || 'Action executed';
-        
+
         if (metadata.locator_strategy) {
             statusMsg += ` [${metadata.locator_strategy}]`;
         }
-        
+
         if (metadata.healing_attempted) {
             if (metadata.healing_successful) {
                 statusMsg += ' (Self-healed ✓)';
@@ -521,13 +521,13 @@ function handleBrowserUpdate(data) {
                 statusMsg += ' (Healing failed)';
             }
         }
-        
+
         if (metadata.confidence) {
             statusMsg += ` [Confidence: ${(metadata.confidence * 100).toFixed(0)}%]`;
         }
-        
+
         updateStatus(statusMsg);
-        
+
         // Log detailed metadata to console
         console.log('Execution metadata:', metadata);
     } else if (data.type === 'healing_start' || data.type === 'healing_update') {
@@ -543,7 +543,7 @@ function handleTaskUpdate(data) {
     if (data.type === 'task_update' && data.task) {
         const task = data.task;
         updateTaskInUI(task);
-        
+
         // Update currentTasks array
         const taskIndex = currentTasks.findIndex(t => (t.id || t.name) === (task.id || task.name));
         if (taskIndex >= 0) {
@@ -551,7 +551,7 @@ function handleTaskUpdate(data) {
         } else {
             currentTasks.push(task);
         }
-        
+
         // Update status message
         if (task.status === 'running') {
             updateStatus(`Executing: ${task.name || 'Task ' + task.id}`);
@@ -560,12 +560,12 @@ function handleTaskUpdate(data) {
         } else if (task.status === 'failed') {
             updateStatus(`Failed: ${task.name || 'Task ' + task.id}`);
         }
-        
+
         // Update message if provided
         if (data.message) {
             updateStatus(data.message);
         }
-        
+
         // Update agent status popup
         updateAgentStatusPopup();
     } else if (data.type === 'step_start') {
@@ -576,7 +576,7 @@ function handleTaskUpdate(data) {
         }
     } else if (data.type === 'step_complete') {
         // Step completed
-        const statusMsg = data.success 
+        const statusMsg = data.success
             ? `Step completed: ${data.step || data.message || ''}`
             : `Step failed: ${data.step || data.message || ''}`;
         updateStatus(statusMsg);
@@ -592,7 +592,7 @@ function handleTaskUpdate(data) {
         updateStatus('Agent execution started');
     } else if (data.type === 'execution_complete') {
         updateStatus('All tasks completed successfully!');
-        
+
         // Reset button states
         const startExecutionBtn = document.getElementById('startExecutionBtn');
         const pauseExecutionBtn = document.getElementById('pauseExecutionBtn');
@@ -610,6 +610,28 @@ function handleTaskUpdate(data) {
         updateStatus('Execution resumed');
     } else if (data.type === 'execution_stopped') {
         updateStatus('Execution stopped');
+    } else if (data.type === 'request_input') {
+        // Request user input
+        updateStatus(`Waiting for input: ${data.field}`);
+        // Simple prompt for now
+        setTimeout(() => {
+            const value = prompt(data.message || `Please enter value for ${data.field}:`);
+            if (value !== null) {
+                fetch(`${WORKSPACE_API_URL}/api/workspace/${data.session_id}/input`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: value })
+                }).then(res => res.json())
+                    .then(d => {
+                        console.log('Input sent:', d);
+                        updateStatus(`Input sent for ${data.field}`);
+                    })
+                    .catch(err => {
+                        console.error('Error sending input:', err);
+                        updateStatus('Error sending input');
+                    });
+            }
+        }, 100);
     }
 }
 
@@ -620,7 +642,7 @@ function updateTaskInUI(task) {
     if (!taskList) return;
 
     let taskItem = document.getElementById(`task-${task.id}`);
-    
+
     if (!taskItem) {
         // Create new task item
         taskItem = document.createElement('div');
@@ -631,21 +653,21 @@ function updateTaskInUI(task) {
     // Check if task was healed
     const wasHealed = task.metadata && task.metadata.healing_successful;
     const healingClass = wasHealed ? 'task-healed' : '';
-    
+
     // Update task item
     taskItem.className = `task-item ${task.status} ${healingClass}`;
-    
+
     // Add healing indicator
-    const healingIndicator = wasHealed 
-        ? '<span class="healing-badge" title="This task was self-healed">🔧</span>' 
+    const healingIndicator = wasHealed
+        ? '<span class="healing-badge" title="This task was self-healed">🔧</span>'
         : '';
-    
+
     // Add confidence indicator if available
     const confidence = task.metadata && task.metadata.confidence;
-    const confidenceBadge = confidence 
+    const confidenceBadge = confidence
         ? `<span class="confidence-badge" title="Locator confidence: ${(confidence * 100).toFixed(0)}%">${(confidence * 100).toFixed(0)}%</span>`
         : '';
-    
+
     taskItem.innerHTML = `
         <div class="task-item-header">
             <span class="task-item-name">${task.name || 'Task ' + task.id} ${healingIndicator} ${confidenceBadge}</span>
@@ -688,7 +710,7 @@ async function loadWorkspaceUrl() {
     }
 
     updateStatus('Creating workspace session...');
-    
+
     // Disable input while loading
     if (urlInput) urlInput.disabled = true;
     const loadBtn = document.getElementById('loadWorkspaceUrlBtn');
@@ -715,13 +737,13 @@ async function loadWorkspaceUrl() {
             currentSessionId = data.session_id;
             connectWebSocket(currentSessionId);
             updateStatus('Workspace created. Loading page...');
-            
+
             // Enable plan tasks button
             const planTasksBtn = document.getElementById('planTasksBtn');
             if (planTasksBtn) {
                 planTasksBtn.disabled = false;
             }
-            
+
             // Focus on task input
             const taskInput = document.getElementById('workspaceTaskInput');
             if (taskInput) {
@@ -762,7 +784,7 @@ async function planTasks() {
     }
 
     updateStatus('Planning tasks with AI...');
-    
+
     // Disable input while planning
     if (taskInput) taskInput.disabled = true;
     const planBtn = document.getElementById('planTasksBtn');
@@ -788,17 +810,17 @@ async function planTasks() {
             currentTasks = data.tasks || [];
             renderTasks(currentTasks);
             updateStatus(`Planned ${currentTasks.length} tasks. Ready to start!`);
-            
+
             // Update agent status popup with new tasks
             updateAgentStatusPopup();
-            
+
             // Enable start button
             const startExecutionBtn = document.getElementById('startExecutionBtn');
             if (startExecutionBtn) {
                 startExecutionBtn.disabled = false;
                 startExecutionBtn.focus();
             }
-            
+
             // Re-enable task input for editing
             if (taskInput) taskInput.disabled = false;
         } else {
@@ -833,7 +855,7 @@ function renderTasks(tasks) {
         const taskItem = document.createElement('div');
         taskItem.id = `task-${task.id}`;
         taskItem.className = `task-item ${task.status || 'pending'}`;
-        
+
         taskItem.innerHTML = `
             <div class="task-item-header">
                 <span class="task-item-name">${task.name || 'Task ' + (index + 1)}</span>
@@ -841,7 +863,7 @@ function renderTasks(tasks) {
             </div>
             <div class="task-item-description">${task.description || ''}</div>
         `;
-        
+
         taskList.appendChild(taskItem);
     });
 }
@@ -866,7 +888,7 @@ async function startExecution() {
 
         if (response.ok) {
             updateStatus('Executing tasks...');
-            
+
             // Update button states
             const startExecutionBtn = document.getElementById('startExecutionBtn');
             const pauseExecutionBtn = document.getElementById('pauseExecutionBtn');
@@ -969,7 +991,7 @@ function updateStatus(message) {
             console.log('[Workspace Status]:', message);
         }
     }
-    
+
     // Update agent status popup if open
     updateAgentStatusPopup();
 }
@@ -978,14 +1000,14 @@ function updateStatus(message) {
 function updateAgentStatusPopup() {
     const currentActionEl = document.getElementById('workspaceAgentCurrentAction');
     const taskChecklistEl = document.getElementById('workspaceAgentTaskChecklist');
-    
+
     if (!currentActionEl || !taskChecklistEl) return;
-    
+
     // Update current action
     const statusEl = document.getElementById('workspaceStatus');
     const currentAction = statusEl ? statusEl.querySelector('p')?.textContent || 'Ready' : 'Ready';
     currentActionEl.innerHTML = `<p class="workspace-agent-action-text">${currentAction}</p>`;
-    
+
     // Update task checklist with detailed report format
     if (currentTasks && currentTasks.length > 0) {
         // Calculate summary statistics
@@ -994,7 +1016,7 @@ function updateAgentStatusPopup() {
         const failedTasks = currentTasks.filter(t => t.status === 'failed').length;
         const runningTasks = currentTasks.filter(t => t.status === 'running').length;
         const pendingTasks = currentTasks.filter(t => t.status === 'pending').length;
-        
+
         const checklistHTML = `
             <div class="workspace-agent-report-summary">
                 <div class="report-summary-item">
@@ -1016,55 +1038,55 @@ function updateAgentStatusPopup() {
             </div>
             <div class="workspace-agent-report-tasks">
                 ${currentTasks.map(task => {
-                    const taskId = task.id || 'unknown';
-                    const taskName = task.name || `Task ${taskId}`;
-                    const taskDesc = task.description || '';
-                    const taskStatus = task.status || 'pending';
-                    const isChecked = taskStatus === 'done';
-                    const hasError = taskStatus === 'failed';
-                    const isRunning = taskStatus === 'running';
-                    const metadata = task.metadata || {};
-                    
-                    let statusIcon = '⏳';
-                    let statusClass = 'pending';
-                    let statusText = 'Pending';
-                    if (isChecked) {
-                        statusIcon = '✅';
-                        statusClass = 'done';
-                        statusText = 'Completed';
-                    } else if (hasError) {
-                        statusIcon = '❌';
-                        statusClass = 'failed';
-                        statusText = 'Failed';
-                    } else if (isRunning) {
-                        statusIcon = '🔄';
-                        statusClass = 'running';
-                        statusText = 'Running';
-                    }
-                    
-                    // Build execution details
-                    const executionDetails = [];
-                    if (metadata.locator_strategy) {
-                        executionDetails.push(`Strategy: ${metadata.locator_strategy}`);
-                    }
-                    if (metadata.confidence) {
-                        executionDetails.push(`Confidence: ${(metadata.confidence * 100).toFixed(0)}%`);
-                    }
-                    if (metadata.healing_attempted) {
-                        if (metadata.healing_successful) {
-                            executionDetails.push('Self-healed ✓');
-                        } else {
-                            executionDetails.push('Healing failed');
-                        }
-                    }
-                    if (task.execution_time) {
-                        executionDetails.push(`Time: ${task.execution_time.toFixed(2)}s`);
-                    }
-                    if (task.action_type) {
-                        executionDetails.push(`Action: ${task.action_type}`);
-                    }
-                    
-                    return `
+            const taskId = task.id || 'unknown';
+            const taskName = task.name || `Task ${taskId}`;
+            const taskDesc = task.description || '';
+            const taskStatus = task.status || 'pending';
+            const isChecked = taskStatus === 'done';
+            const hasError = taskStatus === 'failed';
+            const isRunning = taskStatus === 'running';
+            const metadata = task.metadata || {};
+
+            let statusIcon = '⏳';
+            let statusClass = 'pending';
+            let statusText = 'Pending';
+            if (isChecked) {
+                statusIcon = '✅';
+                statusClass = 'done';
+                statusText = 'Completed';
+            } else if (hasError) {
+                statusIcon = '❌';
+                statusClass = 'failed';
+                statusText = 'Failed';
+            } else if (isRunning) {
+                statusIcon = '🔄';
+                statusClass = 'running';
+                statusText = 'Running';
+            }
+
+            // Build execution details
+            const executionDetails = [];
+            if (metadata.locator_strategy) {
+                executionDetails.push(`Strategy: ${metadata.locator_strategy}`);
+            }
+            if (metadata.confidence) {
+                executionDetails.push(`Confidence: ${(metadata.confidence * 100).toFixed(0)}%`);
+            }
+            if (metadata.healing_attempted) {
+                if (metadata.healing_successful) {
+                    executionDetails.push('Self-healed ✓');
+                } else {
+                    executionDetails.push('Healing failed');
+                }
+            }
+            if (task.execution_time) {
+                executionDetails.push(`Time: ${task.execution_time.toFixed(2)}s`);
+            }
+            if (task.action_type) {
+                executionDetails.push(`Action: ${task.action_type}`);
+            }
+
+            return `
                         <div class="workspace-agent-report-item ${statusClass}">
                             <div class="report-item-header">
                                 <div class="report-item-status">
@@ -1093,10 +1115,10 @@ function updateAgentStatusPopup() {
                             ` : ''}
                         </div>
                     `;
-                }).join('')}
+        }).join('')}
             </div>
         `;
-        
+
         taskChecklistEl.innerHTML = checklistHTML;
     } else {
         taskChecklistEl.innerHTML = '<p class="workspace-agent-empty">No tasks yet. Plan tasks to see them here.</p>';
@@ -1107,14 +1129,14 @@ function updateAgentStatusPopup() {
 function addAgentChatMessage(message, sender) {
     const chatMessages = document.getElementById('agentChatMessages');
     if (!chatMessages) return;
-    
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `agent-chat-msg agent-chat-${sender}`;
-    
+
     const content = document.createElement('p');
     content.textContent = message;
     messageDiv.appendChild(content);
-    
+
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -1133,7 +1155,7 @@ async function sendAgentChatMessage(userMessage) {
             session_id: currentSessionId,
             current_action: document.getElementById('workspaceStatus')?.querySelector('p')?.textContent || 'N/A'
         };
-        
+
         // Get task details for context
         const taskDetails = currentTasks.map(task => ({
             id: task.id,
@@ -1144,7 +1166,7 @@ async function sendAgentChatMessage(userMessage) {
             error: task.metadata?.error || null,
             execution_time: task.execution_time || null
         }));
-        
+
         const response = await fetch(`${WORKSPACE_API_URL}/api/chatbot`, {
             method: 'POST',
             headers: {
@@ -1160,11 +1182,11 @@ async function sendAgentChatMessage(userMessage) {
                 history: []
             })
         });
-        
+
         if (!response.ok) {
             throw new Error('Failed to get chatbot response');
         }
-        
+
         const data = await response.json();
         addAgentChatMessage(data.response || data.message || 'I apologize, but I couldn\'t process your request.', 'bot');
     } catch (error) {

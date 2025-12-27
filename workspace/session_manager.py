@@ -79,7 +79,23 @@ class WorkspaceSessionManager:
         task_planner = session['task_planner']
         
         current_url = browser_session.current_url if browser_session.current_url else None
-        tasks = task_planner.plan_tasks(instruction, current_url)
+        
+        # Enhanced: Scan page for forms first
+        form_schema = None
+        try:
+            # Lazy import to avoid circular dependency issues if any
+            from capabilities.form_intelligence import FormIntelligenceModule
+            if browser_session.page:
+                form_module = FormIntelligenceModule(browser_session.page)
+                scan_result = form_module._detect_forms()
+                if scan_result and scan_result.get('forms'):
+                    form_schema = scan_result
+                    print(f"Task Planning: Detected {len(form_schema['forms'])} forms with {form_schema['total_fields']} fields")
+        except Exception as e:
+            print(f"Warning: Form detection failed during planning: {e}")
+
+        # Plan tasks with form context
+        tasks = task_planner.plan_tasks(instruction, current_url, form_schema)
         
         # Set tasks in executor
         task_executor = session['task_executor']
@@ -224,6 +240,13 @@ class WorkspaceSessionManager:
         if session:
             session['task_executor'].stop_execution()
     
+    def provide_input(self, session_id, value):
+        """Provide user input for a waiting session"""
+        session = self.get_session(session_id)
+        if session:
+            return session['task_executor'].provide_input(value)
+        return False
+
     def stop_session(self, session_id):
         """Stop and cleanup a session"""
         session = self.get_session(session_id)
