@@ -42,20 +42,22 @@ class MotionPolish {
 
         this.observer = new IntersectionObserver((entries, obs) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const target = entry.target;
+                const target = entry.target;
 
-                    // Handle specific animation types
+                if (entry.isIntersecting) {
+                    // Element enters viewport - Play animation
                     if (target.classList.contains('scroll-trigger-animation')) {
-                        // For existing complex CSS animations
                         target.classList.add('play');
                     } else {
-                        // For standard reveal animations
                         target.classList.add('visible');
                     }
-
-                    // Stop observing once revealed (run once)
-                    obs.unobserve(target);
+                } else {
+                    // Element leaves viewport - Reset animation so it can play again
+                    if (target.classList.contains('scroll-trigger-animation')) {
+                        target.classList.remove('play');
+                    } else {
+                        target.classList.remove('visible');
+                    }
                 }
             });
         }, options);
