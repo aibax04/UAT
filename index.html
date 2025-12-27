@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" type="text/css" href="styles.css?v=2">
     <link rel="stylesheet" type="text/css" href="scheduled_testing.css">
+    <link rel="stylesheet" type="text/css" href="live_simulation.css">
 </head>
 
 <body>
@@ -16,6 +17,18 @@
 
         <div class="background-overlay"></div>
     </div>
+
+    <!-- Live Simulation Panel -->
+    <div id="liveAgentSimulation" class="live-simulation-container">
+        <div class="sim-header">
+            <span class="sim-status-dot"></span>
+            <span class="sim-title">AUTONOMOUS_KERNEL_ACTIVE</span>
+        </div>
+        <div class="sim-logs" id="simLogs">
+            <!-- Logs will appear here -->
+        </div>
+    </div>
+
     <div class="landing-page" id="landingPage">
         <div class="hero-section">
             <h1>CRAWL AI</h1>
@@ -615,6 +628,7 @@
 
     <script src="background_3d.js"></script>
     <script src="autonomous_engine.js"></script>
+    <script src="live_simulation.js"></script>
     <script src="workspace.js"></script>
     <script src="scheduled_testing.js"></script>
 </body>
